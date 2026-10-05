@@ -12,6 +12,7 @@ describe('QuestionSelectorService', () => {
   it('returns the requested number of questions', () => {
     const result = selector().select({
       interests: ['cooking'],
+      details: {},
       hidden: new Set(),
       liked: new Set(),
       recentlyShown: [],
@@ -37,7 +38,8 @@ describe('QuestionSelectorService', () => {
     for (let i = 0; i < 50; i++) {
       const result = selector().select({
         interests: ['gaming'],
-        hidden: new Set(),
+        details: {},
+      hidden: new Set(),
         liked: new Set(),
         recentlyShown: [],
         count: 3,
@@ -53,6 +55,7 @@ describe('QuestionSelectorService', () => {
     const recentlyShown = general.slice(0, general.length - 2);
     const result = selector().select({
       interests: [],
+      details: {},
       hidden: new Set(),
       liked: new Set(),
       recentlyShown,
@@ -65,7 +68,7 @@ describe('QuestionSelectorService', () => {
     const general = QUESTION_BANK.filter((q) => q.tags.includes('general')).map((q) => q.id);
     // Everything has been shown; oldest first.
     const result = selector().select(
-      { interests: [], hidden: new Set(), liked: new Set(), recentlyShown: general, count: 2 },
+      { interests: [], details: {}, hidden: new Set(), liked: new Set(), recentlyShown: general, count: 2 },
       fixed(0),
     );
     expect(result.map((q) => q.id)).toEqual(general.slice(0, 2));
@@ -75,7 +78,8 @@ describe('QuestionSelectorService', () => {
     for (let i = 0; i < 50; i++) {
       const result = selector().select({
         interests: ['reading', 'music'],
-        hidden: new Set(),
+        details: {},
+      hidden: new Set(),
         liked: new Set(),
         recentlyShown: [],
         count: 2,
@@ -83,5 +87,30 @@ describe('QuestionSelectorService', () => {
       const specific = result.flatMap((q) => q.tags.filter((t) => t !== 'general'));
       expect(new Set(specific).size).toBe(specific.length);
     }
+  });
+
+  it('only offers detail-driven questions when the answers exist', () => {
+    const withoutDetails = selector().select({
+      interests: ['sports'],
+      details: {},
+      hidden: new Set(),
+      liked: new Set(),
+      recentlyShown: [],
+      count: 50,
+    });
+    expect(withoutDetails.some((q) => q.requires?.length)).toBe(false);
+
+    const withDetails = selector().select({
+      interests: ['sports'],
+      details: { sports: { team: 'Vikings' } },
+      hidden: new Set(),
+      liked: new Set(),
+      recentlyShown: [],
+      count: 50,
+    });
+    const ids = withDetails.map((q) => q.id);
+    expect(ids).toContain('spo03');
+    expect(ids).toContain('spo04');
+    expect(ids).not.toContain('spo05'); // needs sports.sport, which is not answered
   });
 });

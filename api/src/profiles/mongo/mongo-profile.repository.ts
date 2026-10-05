@@ -48,6 +48,7 @@ function toDomain(doc: ProfileDocument): PartnerProfile {
     id: doc._id,
     name: doc.name,
     interests: doc.interests ?? [],
+    interestDetails: doc.interestDetails ?? {},
     currentFocus: doc.currentFocus,
     notes: doc.notes,
     feedback: (doc.feedback ?? []).map((f) => ({
@@ -65,6 +66,7 @@ function toDocument(profile: PartnerProfile): Partial<ProfileDocument> {
   return {
     name: profile.name,
     interests: profile.interests,
+    interestDetails: profile.interestDetails,
     currentFocus: profile.currentFocus,
     notes: profile.notes,
     feedback: profile.feedback,

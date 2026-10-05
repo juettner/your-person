@@ -1,5 +1,7 @@
 import { ArrayMaxSize, IsArray, IsIn, IsOptional, IsString, Length, MaxLength } from 'class-validator';
 import { INTEREST_IDS } from '../../questions/interests.js';
+import type { InterestDetails } from '../profile.model.js';
+import { IsInterestDetails } from './interest-details.validator.js';
 
 /** Request body for PATCH /api/profiles/:id. Every field is optional; only sent fields change. */
 export class UpdateProfileDto {
@@ -13,6 +15,11 @@ export class UpdateProfileDto {
   @ArrayMaxSize(INTEREST_IDS.length)
   @IsIn(INTEREST_IDS, { each: true })
   interests?: string[];
+
+  /** Replaces the whole details object when sent (the app always sends the full set). */
+  @IsOptional()
+  @IsInterestDetails()
+  interestDetails?: InterestDetails;
 
   @IsOptional()
   @IsString()

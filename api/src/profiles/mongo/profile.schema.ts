@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 
 /**
  * Mongoose schema for the `profiles` collection.
@@ -11,6 +11,10 @@ import { HydratedDocument } from 'mongoose';
  *
  * Notice `feedback` is an ARRAY OF OBJECTS stored inside the profile document.
  * In Postgres this would be a `question_feedback` table with a profile_id FK.
+ *
+ * `interestDetails` goes further: its shape depends on which interests were
+ * picked, so it is declared as `Mixed` (schemaless). The API validates it on
+ * the way in (dto/interest-details.validator.ts) instead of the database.
  */
 @Schema({ _id: false })
 export class FeedbackSubdocument {
@@ -35,6 +39,9 @@ export class ProfileDocument {
 
   @Prop({ type: [String], default: [] })
   interests: string[];
+
+  @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
+  interestDetails: Record<string, Record<string, string | string[]>>;
 
   @Prop()
   currentFocus?: string;

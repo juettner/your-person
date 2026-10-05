@@ -1,5 +1,7 @@
 import { ArrayMaxSize, IsArray, IsIn, IsOptional, IsString, Length, MaxLength } from 'class-validator';
 import { INTEREST_IDS } from '../../questions/interests.js';
+import type { InterestDetails } from '../profile.model.js';
+import { IsInterestDetails } from './interest-details.validator.js';
 
 /**
  * Request body for POST /api/profiles.
@@ -17,6 +19,10 @@ export class CreateProfileDto {
   @ArrayMaxSize(INTEREST_IDS.length)
   @IsIn(INTEREST_IDS, { each: true })
   interests: string[];
+
+  @IsOptional()
+  @IsInterestDetails()
+  interestDetails?: InterestDetails;
 
   @IsOptional()
   @IsString()

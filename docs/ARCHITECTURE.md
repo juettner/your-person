@@ -35,6 +35,7 @@ Two deployable units, one repo. The app never talks to the database; it only tal
 
 - React is a component model. A component is a function that takes `props` (think constructor arguments) and returns UI. State lives in hooks (`useState`, `useEffect`). There are no classes to speak of anymore.
 - React Native renders real native widgets (`View` is a `UIView` on iOS, a `ViewGroup` on Android, a `div` on web). Styling uses a subset of CSS expressed as JavaScript objects.
+- Colors come from a palette object provided through React Context (`components/ThemeProvider.tsx`); components call `usePalette()` and never hard-code a hex. Five palettes live in `constants/theme.ts`, and the chosen one is remembered on the device. Spring analogy: a scoped bean that any component can have injected.
 - **Expo Router** is file-based navigation: every file under `src/app/` is a screen, and `_layout.tsx` files define the navigator around them. Think of it like Spring MVC mapping URLs to controllers by convention instead of annotations.
 - The app code is heavily commented. Start with `app/src/app/_layout.tsx` and follow the imports.
 
@@ -97,14 +98,35 @@ Embedding is the right call *because* the children are small, bounded, and never
 
 **Mongoose** is the ODM (the document-world equivalent of an ORM). It gives you a schema and a typed model on top of a schemaless store. `@nestjs/mongoose` wires it into Nest's DI.
 
+## Deep interests: follow-ups, details, and templates
+
+Picking "Sports" is level one. The taxonomy in `api/src/questions/interests.ts` gives each interest two or three **follow-ups**: a `choice` (chips, single or multi) or `text` (free input). Sports asks which sport (multi-choice), which team (text), and fan, player, or both (single choice). The app renders these from `GET /api/interests`, so the questionnaire is data-driven: add a follow-up on the server and it appears in the app.
+
+Answers are stored on the profile as `interestDetails`, keyed by interest id then follow-up id:
+
+```json
+{ "sports": { "sport": ["Football"], "team": "Vikings", "involvement": "Watches" },
+  "music":  { "genre": ["Jazz", "Folk"], "artist": "Bon Iver" } }
+```
+
+The shape varies per profile, which is exactly what a document store is comfortable with. In the Mongoose schema this field is `Mixed` (schemaless); the API validates it on the way in with a custom class-validator decorator (`profiles/dto/interest-details.validator.ts`) that checks every key against the taxonomy and every value against its follow-up's kind. Details for an interest that gets deselected are dropped.
+
+Questions can then use the answers. A template question declares what it needs:
+
+```ts
+{ id: 'spo03', text: 'How are the {sports.team} looking right now, honestly?', tags: ['sports'], requires: ['sports.team'] }
+```
+
+The selector only considers it when the profile has those answers, and weights it above interest-matched and general questions. `question-template.ts` fills the placeholders at render time; a multi-choice answer contributes one random item per showing, and `{music.genre|lower}` lowercases for mid-sentence use. A unit test walks the whole bank to make sure every placeholder refers to a real follow-up and is declared in `requires`.
+
 ## The question selection algorithm
 
 Lives in `api/src/questions/question-selector.service.ts`. Pure function of the profile, with an injectable random source so tests are deterministic.
 
 1. Drop any question the user hid (thumbs-down).
-2. Candidates are questions tagged `general` plus questions matching any of the profile's interests.
+2. Candidates are questions tagged `general` plus questions matching any of the profile's interests, provided any `requires` are answered in the profile's details.
 3. Prefer questions not shown recently. If there are not enough fresh ones, top up with the ones shown longest ago.
-4. Weighted random pick: interest-matched questions weigh 3, general ones 1, liked ones get +1.
+4. Weighted random pick: detail-driven questions weigh 5, interest-matched 3, general 1, liked ones get +1.
 5. Within one batch, avoid two questions about the same interest when there is a choice.
 
 The question bank (`question-bank.ts`) is injected under the `QUESTION_SOURCE` token. Swapping in an LLM-generated or database-backed source later does not touch the selector.
@@ -116,8 +138,8 @@ All routes are under `/api`. JSON in, JSON out. No auth in the MVP; the profile 
 | Method | Path | Body | Returns |
 | --- | --- | --- | --- |
 | GET | `/api/health` | | `{ status, storage: "memory" \| "mongo" }` |
-| GET | `/api/interests` | | `[{ id, label }]` |
-| POST | `/api/profiles` | `{ name, interests[], currentFocus?, notes? }` | profile |
+| GET | `/api/interests` | | `[{ id, label, followUps: [{ id, prompt, kind, options?, multi?, placeholder? }] }]` |
+| POST | `/api/profiles` | `{ name, interests[], interestDetails?, currentFocus?, notes? }` | profile |
 | GET | `/api/profiles/:id` | | profile |
 | PATCH | `/api/profiles/:id` | any subset of the create body | profile |
 | GET | `/api/profiles/:id/questions?count=3` | | `{ askName, questions: [{ id, text, interest }] }` |

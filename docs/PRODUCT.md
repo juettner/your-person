@@ -23,13 +23,17 @@ The user is one half of the couple. They set up a profile *about* their person. 
 
 | Screen | Purpose | Notes |
 | --- | --- | --- |
-| **Onboarding** | Set up the partner profile | Name, pick interests from chips, one free-text box: "What's going on in their world lately?" Three taps and you are in. |
-| **Today** | Show questions | Full-screen, one question at a time. Big text. "Ask Sam" at the top. Thumbs up / thumbs down / next. Three questions per batch, then "Get more". |
-| **Profile** | Update the profile | Same form as onboarding, pre-filled. Reachable from a small icon on the Today screen. |
+| **Onboarding** | Set up the partner profile | A short stack of index cards. Card 1: name, pick interests from chips, one free-text box: "What's going on in their world lately?" Then one card per chosen interest that goes deeper: Sports asks which sport, then which team, then fan or player; Music asks genres, then artists, then live shows or headphones. Every deeper answer is optional. |
+| **Today** | Show questions | One question on a card. Big text. "Ask Sam" at the top. "Nope" hides it, "Good one" keeps it coming back, "Next card" advances. Three per batch, then deal three more. |
+| **Profile** | Update the profile and pick a look | Same cards as onboarding, pre-filled. Save from the first card or walk into the details. Five color palettes to choose from. |
+
+### Why go deep on interests
+
+"They like sports" produces a generic question. "They follow the Vikings" produces "How are the Vikings looking right now, honestly?" The follow-ups exist to turn the question bank from a list of pleasantries into something that sounds like it knows your person. Each interest has two or three follow-ups, and the question bank has templates that use those answers (`docs/ARCHITECTURE.md`, "Deep interests").
 
 ### Behaviour
 
-- Questions are chosen from a curated bank. Each question is tagged with interests. A profile sees general questions plus ones matching its interests.
+- Questions are chosen from a curated bank. Each question is tagged with interests. A profile sees general questions, ones matching its interests, and, favoured above both, ones built from its follow-up answers.
 - Recently shown questions are avoided until the pool runs dry.
 - Thumbs-down hides a question permanently for that profile. Thumbs-up makes it slightly more likely to come back later.
 - The profile is stored on the server and its id is kept on the device. Reinstalling the app loses the link to the profile. Acceptable for an MVP; accounts fix it later.

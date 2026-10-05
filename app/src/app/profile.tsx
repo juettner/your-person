@@ -52,9 +52,6 @@ export default function ProfileScreen() {
   const header = (
     <View style={styles.header}>
       <Button title="Back" variant="link" onPress={() => router.back()} style={styles.back} />
-      <Text style={[styles.title, { color: p.onGround }]} accessibilityRole="header">
-        Your person
-      </Text>
       <View style={styles.themeBlock}>
         <Text style={[styles.sectionLabel, { color: p.onGround }]}>Look</Text>
         <ThemePicker />
@@ -83,6 +80,8 @@ export default function ProfileScreen() {
   return (
     <Screen>
       <ProfileForm
+        mode="edit"
+        title="Your person."
         initial={profile}
         submitLabel="Save"
         onSubmit={save}
@@ -108,12 +107,6 @@ const styles = StyleSheet.create({
   },
   back: {
     alignSelf: 'flex-start',
-  },
-  title: {
-    fontFamily: Fonts.extraBold,
-    fontSize: 34,
-    lineHeight: 38,
-    letterSpacing: -1,
   },
   themeBlock: {
     gap: Spacing.sm,

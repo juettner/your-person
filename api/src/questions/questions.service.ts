@@ -1,14 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ProfileRepository } from '../profiles/profile.repository.js';
 import { ProfilesService } from '../profiles/profiles.service.js';
-import { RECENTLY_SHOWN_LIMIT, Score } from '../profiles/profile.model.js';
+import { InterestDetails, RECENTLY_SHOWN_LIMIT, Score } from '../profiles/profile.model.js';
 import { GENERAL_TAG, interestLabel } from './interests.js';
 import { findQuestion, Question } from './question-bank.js';
 import { QuestionSelectorService } from './question-selector.service.js';
+import { renderTemplate } from './question-template.js';
 
 /** One prompt as the app displays it. */
 export interface PromptResponse {
   id: string;
+  /** Fully rendered: placeholders like {sports.team} are already filled in. */
   text: string;
   /** Human label of the matched interest, or null for a general question. */
   interest: string | null;
@@ -43,6 +45,7 @@ export class QuestionsService {
 
     const chosen = this.selector.select({
       interests: profile.interests,
+      details: profile.interestDetails,
       hidden,
       liked,
       recentlyShown: profile.recentlyShown,
@@ -59,7 +62,7 @@ export class QuestionsService {
 
     return {
       askName: profile.name,
-      questions: chosen.map((q) => toPrompt(q, profile.interests)),
+      questions: chosen.map((q) => toPrompt(q, profile.interests, profile.interestDetails)),
     };
   }
 
@@ -81,11 +84,11 @@ export class QuestionsService {
   }
 }
 
-function toPrompt(question: Question, interests: readonly string[]): PromptResponse {
+function toPrompt(question: Question, interests: readonly string[], details: InterestDetails): PromptResponse {
   const matched = question.tags.find((t) => t !== GENERAL_TAG && interests.includes(t));
   return {
     id: question.id,
-    text: question.text,
+    text: renderTemplate(question.text, details),
     interest: matched ? (interestLabel(matched) ?? null) : null,
   };
 }

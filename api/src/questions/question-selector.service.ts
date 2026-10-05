@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
+import type { InterestDetails } from '../profiles/profile.model.js';
 import { GENERAL_TAG } from './interests.js';
 import type { Question } from './question-bank.js';
+import { hasRequiredDetails } from './question-template.js';
 
 /**
  * Injection token for the question list. Letting the bank be injected (rather
@@ -12,6 +14,8 @@ export const QUESTION_SOURCE = 'QUESTION_SOURCE';
 /** Everything the selector needs to know about a profile, and nothing more. */
 export interface SelectionInput {
   interests: readonly string[];
+  /** Follow-up answers; decide whether `requires` questions are eligible. */
+  details: InterestDetails;
   /** Question ids the user rated -1. Never shown again. */
   hidden: ReadonlySet<string>;
   /** Question ids the user rated +1. Slightly favoured. */
@@ -24,6 +28,7 @@ export interface SelectionInput {
 /** A function returning a float in [0, 1). Injected so tests are deterministic. */
 export type Rng = () => number;
 
+const WEIGHT_DETAIL_MATCH = 5;
 const WEIGHT_INTEREST_MATCH = 3;
 const WEIGHT_GENERAL = 1;
 const WEIGHT_LIKED_BONUS = 1;
@@ -33,10 +38,12 @@ const WEIGHT_LIKED_BONUS = 1;
  *
  * Rules, in order:
  *  1. Hidden questions are out, full stop.
- *  2. Candidates are questions tagged `general` or matching an interest.
+ *  2. Candidates are questions tagged `general` or matching an interest, and
+ *     whose `requires` (if any) are all answered in the profile's details.
  *  3. Prefer questions not shown recently. Fall back to the longest-ago ones
  *     only when there aren't enough fresh candidates.
- *  4. Interest-matched questions outweigh general ones; liked ones get a bump.
+ *  4. Weighted random: detail-driven questions outweigh interest-matched ones,
+ *     which outweigh general ones; liked ones get a bump.
  *  5. Avoid two questions about the same interest in one batch when possible.
  */
 @Injectable()
@@ -46,7 +53,8 @@ export class QuestionSelectorService {
   select(input: SelectionInput, rng: Rng = Math.random): Question[] {
     const interests = new Set(input.interests);
     const matchesProfile = (q: Question) =>
-      q.tags.includes(GENERAL_TAG) || q.tags.some((t) => interests.has(t));
+      (q.tags.includes(GENERAL_TAG) || q.tags.some((t) => interests.has(t))) &&
+      hasRequiredDetails(input.details, q.requires);
 
     const candidates = this.bank.filter((q) => !input.hidden.has(q.id) && matchesProfile(q));
 
@@ -63,8 +71,9 @@ export class QuestionSelectorService {
     }
 
     const weightOf = (q: Question) => {
-      const matched = q.tags.some((t) => interests.has(t));
-      let w = matched ? WEIGHT_INTEREST_MATCH : WEIGHT_GENERAL;
+      let w = WEIGHT_GENERAL;
+      if (q.requires?.length) w = WEIGHT_DETAIL_MATCH;
+      else if (q.tags.some((t) => interests.has(t))) w = WEIGHT_INTEREST_MATCH;
       if (input.liked.has(q.id)) w += WEIGHT_LIKED_BONUS;
       return w;
     };

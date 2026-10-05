@@ -13,14 +13,33 @@ const BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000').re
 
 // ---- Types mirrored from the API -------------------------------------------
 
+/**
+ * A follow-up question for one interest ("Which sport?", "Which team?").
+ * The API owns this list, so the questionnaire is data-driven: a new
+ * follow-up on the server shows up in the app with no release.
+ */
+export interface FollowUp {
+  id: string;
+  prompt: string;
+  kind: 'choice' | 'text';
+  options?: string[];
+  multi?: boolean;
+  placeholder?: string;
+}
+
 export interface Interest {
   id: string;
   label: string;
+  followUps: FollowUp[];
 }
+
+/** Answers keyed by interest id, then follow-up id. Multi-choice answers are arrays. */
+export type InterestDetails = Record<string, Record<string, string | string[]>>;
 
 export interface ProfileInput {
   name: string;
   interests: string[];
+  interestDetails?: InterestDetails;
   currentFocus?: string;
   notes?: string;
 }

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { CreateProfileDto } from './dto/create-profile.dto.js';
 import type { UpdateProfileDto } from './dto/update-profile.dto.js';
-import { PartnerProfile, ProfileResponse, toProfileResponse } from './profile.model.js';
+import { InterestDetails, PartnerProfile, ProfileResponse, toProfileResponse } from './profile.model.js';
 import { ProfileRepository } from './profile.repository.js';
 
 /**
@@ -14,10 +14,12 @@ export class ProfilesService {
 
   async create(dto: CreateProfileDto): Promise<ProfileResponse> {
     const now = new Date();
+    const interests = dedupe(dto.interests);
     const profile: PartnerProfile = {
       id: randomUUID(),
       name: dto.name.trim(),
-      interests: dedupe(dto.interests),
+      interests,
+      interestDetails: cleanDetails(dto.interestDetails ?? {}, interests),
       currentFocus: blankToUndefined(dto.currentFocus),
       notes: blankToUndefined(dto.notes),
       feedback: [],
@@ -36,6 +38,12 @@ export class ProfilesService {
     const profile = await this.load(id);
     if (dto.name !== undefined) profile.name = dto.name.trim();
     if (dto.interests !== undefined) profile.interests = dedupe(dto.interests);
+    if (dto.interestDetails !== undefined) profile.interestDetails = dto.interestDetails;
+    // Details only make sense for interests that are still selected, so re-clean
+    // whenever either side changed.
+    if (dto.interests !== undefined || dto.interestDetails !== undefined) {
+      profile.interestDetails = cleanDetails(profile.interestDetails, profile.interests);
+    }
     if (dto.currentFocus !== undefined) profile.currentFocus = blankToUndefined(dto.currentFocus);
     if (dto.notes !== undefined) profile.notes = blankToUndefined(dto.notes);
     profile.updatedAt = new Date();
@@ -57,4 +65,28 @@ function dedupe(values: string[]): string[] {
 function blankToUndefined(value?: string): string | undefined {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+/**
+ * Keeps only details for selected interests, trims strings, and drops blanks,
+ * so a half-finished questionnaire never leaves empty answers behind.
+ */
+export function cleanDetails(details: InterestDetails, interests: string[]): InterestDetails {
+  const out: InterestDetails = {};
+  for (const interestId of interests) {
+    const answers = details[interestId];
+    if (!answers) continue;
+    const cleaned: Record<string, string | string[]> = {};
+    for (const [key, value] of Object.entries(answers)) {
+      if (Array.isArray(value)) {
+        const items = dedupe(value.map((v) => v.trim()).filter(Boolean));
+        if (items.length) cleaned[key] = items;
+      } else {
+        const trimmed = value.trim();
+        if (trimmed) cleaned[key] = trimmed;
+      }
+    }
+    if (Object.keys(cleaned).length) out[interestId] = cleaned;
+  }
+  return out;
 }

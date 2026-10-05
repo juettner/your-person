@@ -35,7 +35,7 @@ describe('your-person API (e2e)', () => {
   it('GET /api/interests lists the questionnaire chips', async () => {
     const res = await request(app.getHttpServer()).get('/api/interests').expect(200);
     expect(res.body.length).toBeGreaterThan(10);
-    expect(res.body[0]).toEqual({ id: expect.any(String), label: expect.any(String) });
+    expect(res.body[0]).toMatchObject({ id: expect.any(String), label: expect.any(String), followUps: expect.any(Array) });
   });
 
   it('rejects an invalid profile', async () => {
@@ -123,6 +123,56 @@ describe('your-person API (e2e)', () => {
       .expect(201);
     const after = await request(app.getHttpServer()).get(`/api/profiles/${id}`).expect(200);
     expect(after.body.hiddenCount).toBe(0);
+  });
+
+  it('serves the follow-up taxonomy with the interests', async () => {
+    const res = await request(app.getHttpServer()).get('/api/interests').expect(200);
+    const sports = res.body.find((i: { id: string }) => i.id === 'sports');
+    expect(sports.followUps.map((f: { id: string }) => f.id)).toEqual(['sport', 'team', 'involvement']);
+    expect(sports.followUps[0]).toMatchObject({ kind: 'choice', multi: true });
+    expect(sports.followUps[1]).toMatchObject({ kind: 'text' });
+  });
+
+  it('validates interest details against the taxonomy', async () => {
+    const post = (body: unknown) => request(app.getHttpServer()).post('/api/profiles').send(body);
+    await post({ name: 'Sam', interests: ['sports'], interestDetails: { nope: {} } }).expect(400);
+    await post({ name: 'Sam', interests: ['sports'], interestDetails: { sports: { nope: 'x' } } }).expect(400);
+    await post({ name: 'Sam', interests: ['sports'], interestDetails: { sports: { team: ['a list'] } } }).expect(400);
+    await post({ name: 'Sam', interests: ['sports'], interestDetails: { sports: { sport: 'not a list' } } }).expect(400);
+    await post({ name: 'Sam', interests: ['sports'], interestDetails: { sports: { team: 'x'.repeat(121) } } }).expect(400);
+  });
+
+  it('stores details, drops them for deselected interests, and personalizes questions', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/api/profiles')
+      .send({
+        name: 'Sam',
+        interests: ['sports'],
+        interestDetails: {
+          sports: { sport: ['Football'], team: '  Vikings ', involvement: '' },
+          music: { genre: ['Jazz'] }, // not a selected interest: dropped
+        },
+      })
+      .expect(201);
+    expect(created.body.interestDetails).toEqual({ sports: { sport: ['Football'], team: 'Vikings' } });
+
+    const id = created.body.id;
+    let sawTeam = false;
+    for (let i = 0; i < 30; i++) {
+      const batch = await request(app.getHttpServer()).get(`/api/profiles/${id}/questions?count=5`).expect(200);
+      for (const q of batch.body.questions) {
+        expect(q.text).not.toMatch(/\{[a-z]+\.[a-zA-Z]+/); // never leak a placeholder
+        if (q.text.includes('Vikings')) sawTeam = true;
+      }
+    }
+    expect(sawTeam).toBe(true);
+
+    // Deselecting the interest removes its details.
+    const updated = await request(app.getHttpServer())
+      .patch(`/api/profiles/${id}`)
+      .send({ interests: ['music'] })
+      .expect(200);
+    expect(updated.body.interestDetails).toEqual({});
   });
 
   it('validates ratings', async () => {

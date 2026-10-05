@@ -7,6 +7,8 @@ Phases, not dates. Each phase should be shippable on its own.
 - [x] NestJS API: profiles, curated question bank, selection with hide/like, in-memory and MongoDB storage
 - [x] Expo app: onboarding questionnaire, full-screen question cards with thumbs up/down, profile edit
 - [x] Runs on web with no infrastructure; iOS and Android via Expo Go
+- [x] Index Card look with five selectable palettes
+- [x] Deep interests: per-interest follow-up cards in onboarding, answers feed templated questions
 - [ ] Try it on a real phone with Expo Go and fix what feels wrong
 
 ## Phase 1: make it real
@@ -26,7 +28,8 @@ Phases, not dates. Each phase should be shippable on its own.
 ## Phase 3: better questions
 
 - Use `currentFocus` in selection, not just display
-- LLM-generated questions behind the existing `QUESTION_SOURCE` port, with the curated bank as fallback. Generate a small batch per profile, cache it, let ratings prune it exactly like curated ones.
+- More template questions per follow-up; "Other" free text on choice chips
+- LLM-generated questions behind the existing `QUESTION_SOURCE` port, with the curated bank as fallback. The follow-up answers are the natural prompt context. Generate a small batch per profile, cache it, let ratings prune it exactly like curated ones.
 - Seasonal and situational prompts (new job, new baby, moved house)
 - Let users write their own questions
 
