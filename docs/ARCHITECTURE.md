@@ -119,6 +119,38 @@ Questions can then use the answers. A template question declares what it needs:
 
 The selector only considers it when the profile has those answers, and weights it above interest-matched and general questions. `question-template.ts` fills the placeholders at render time; a multi-choice answer contributes one random item per showing, and `{music.genre|lower}` lowercases for mid-sentence use. A unit test walks the whole bank to make sure every placeholder refers to a real follow-up and is declared in `requires`.
 
+## Location: a place name, not a pin
+
+The profile can carry `location: { city, region?, country? }`. The app offers "Use my location", which asks the device for a low-accuracy position and reverse-geocodes it to a city name on the phone; only the name is sent. No coordinates are stored anywhere. The city feeds two things: curated templates that use `{profile.city}` ("anything happening in Minneapolis this month?"), and the AI engine's research step.
+
+There is also an "Around town" interest with follow-ups for a neighborhood, a favorite spot, and a place they keep meaning to try, plus location-flavored follow-ups on other interests (favorite restaurant, local venue, where they watch games, where friends meet).
+
+## The AI question engine
+
+`api/src/ai/` writes questions for one person from everything the profile knows. It is off until `ANTHROPIC_API_KEY` is set, and the app is unchanged either way.
+
+```
+profile  ──►  (optional) research: Claude + web search  ──►  brief
+                                                               │
+profile + brief + liked/hidden history  ──►  generate: Claude, structured JSON  ──►  10 questions
+                                                                                        │
+                                                            saved on the profile as `generated`
+                                                            mixed into every batch at the top weight
+                                                            rated and hidden like any other question
+```
+
+**Ports and adapters.** `GenerationClient` is an abstract class with two methods, `generateQuestions` and `research`. `AnthropicGenerationClient` is the only file that imports the Anthropic SDK; `NoopGenerationClient` is wired when there is no key. Tests swap in a fake, so the whole loop (generate, select, rate, hide) runs end to end in CI with no network. Spring analogy: an interface with a real and a no-op implementation chosen by configuration.
+
+**Prompting.** The system prompt is stable and marked for prompt caching. The user message carries the profile (name, city, "lately", interests with every follow-up answer), the texts of questions the asker liked and hid, the current deck (to avoid repeats), the research brief if any, and the count. Output is constrained with structured outputs to `{ questions: [{ text, interest, basis }] }`, so there is no parsing of prose. The model is `claude-opus-5-5` by default (`ANTHROPIC_MODEL` overrides) with thinking left adaptive and effort set to medium. The research call enables the server-side refusal fallback so a declined request is retried on a sibling model automatically.
+
+**Research.** With `AI_RESEARCH=true`, a first call gives Claude the web search tool and a brief built from the details: upcoming games for the team, releases or tour dates for the artist, new restaurants of their cuisine in their city, events in town in the coming weeks. The reply is a bulleted brief that the generation call may use "where it fits, without inventing beyond it". The web search tool is told the user's approximate city so results are local. It is off by default because it costs more per refresh.
+
+**When it runs.** `GenerationScheduler` refreshes a deck in the background, one refresh per profile at a time, when the deck is empty, older than seven days, built from different inputs (a hash of name, interests, details, location, and "lately"), or when fewer than three unhidden AI questions remain. Profile create and update trigger it, and so does fetching prompts. `POST /api/profiles/:id/questions/generate` runs it now and waits; the profile screen has a button for that.
+
+**Storage.** The deck lives on the profile document as `generated: { questions, generatedAt, basis }`. AI question ids start with `ai-` and sit in the same `feedback` list as curated ones.
+
+**What "deeper" looks like from here.** The engine already has every lever the roadmap needs: give the research step more to look up (a venue's calendar, the team's schedule), feed thumbs history back as examples, or let the model also propose new follow-up questions for the taxonomy. None of that changes the port.
+
 ## The question selection algorithm
 
 Lives in `api/src/questions/question-selector.service.ts`. Pure function of the profile, with an injectable random source so tests are deterministic.
@@ -126,7 +158,7 @@ Lives in `api/src/questions/question-selector.service.ts`. Pure function of the 
 1. Drop any question the user hid (thumbs-down).
 2. Candidates are questions tagged `general` plus questions matching any of the profile's interests, provided any `requires` are answered in the profile's details.
 3. Prefer questions not shown recently. If there are not enough fresh ones, top up with the ones shown longest ago.
-4. Weighted random pick: detail-driven questions weigh 5, interest-matched 3, general 1, liked ones get +1.
+4. Weighted random pick: AI-written and detail-driven questions weigh 5, interest-matched 3, general 1, liked ones get +1.
 5. Within one batch, avoid two questions about the same interest when there is a choice.
 
 The question bank (`question-bank.ts`) is injected under the `QUESTION_SOURCE` token. Swapping in an LLM-generated or database-backed source later does not touch the selector.
@@ -137,13 +169,16 @@ All routes are under `/api`. JSON in, JSON out. No auth in the MVP; the profile 
 
 | Method | Path | Body | Returns |
 | --- | --- | --- | --- |
-| GET | `/api/health` | | `{ status, storage: "memory" \| "mongo" }` |
+| GET | `/api/health` | | `{ status, storage: "memory" \| "mongo", ai: boolean }` |
 | GET | `/api/interests` | | `[{ id, label, followUps: [{ id, prompt, kind, options?, multi?, placeholder? }] }]` |
 | POST | `/api/profiles` | `{ name, interests[], interestDetails?, currentFocus?, notes? }` | profile |
 | GET | `/api/profiles/:id` | | profile |
 | PATCH | `/api/profiles/:id` | any subset of the create body | profile |
-| GET | `/api/profiles/:id/questions?count=3` | | `{ askName, questions: [{ id, text, interest }] }` |
+| GET | `/api/profiles/:id/questions?count=3` | | `{ askName, questions: [{ id, text, interest, source: "curated" \| "ai" }] }` |
 | POST | `/api/profiles/:id/questions/:questionId/rating` | `{ score: 1 \| -1 }` | `{ questionId, score, hidden }` |
+| POST | `/api/profiles/:id/questions/generate` | | `{ enabled, generated }` |
+
+Profile bodies also accept `location: { city, region?, country? }` (or `null` on PATCH to clear it).
 
 Validation errors return 400 with a list of messages. Unknown ids return 404.
 

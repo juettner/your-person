@@ -28,6 +28,48 @@ export class FeedbackSubdocument {
   ratedAt: Date;
 }
 
+@Schema({ _id: false })
+export class LocationSubdocument {
+  @Prop({ required: true })
+  city: string;
+
+  @Prop()
+  region?: string;
+
+  @Prop()
+  country?: string;
+}
+
+@Schema({ _id: false })
+export class GeneratedQuestionSubdocument {
+  @Prop({ required: true })
+  id: string;
+
+  @Prop({ required: true })
+  text: string;
+
+  @Prop({ type: [String], default: [] })
+  tags: string[];
+
+  @Prop({ default: '' })
+  basis: string;
+
+  @Prop({ required: true })
+  createdAt: Date;
+}
+
+@Schema({ _id: false })
+export class GeneratedSetSubdocument {
+  @Prop({ type: [SchemaFactory.createForClass(GeneratedQuestionSubdocument)], default: [] })
+  questions: GeneratedQuestionSubdocument[];
+
+  @Prop({ type: Date, default: null })
+  generatedAt: Date | null;
+
+  @Prop({ default: '' })
+  basis: string;
+}
+
 @Schema({ collection: 'profiles', timestamps: true })
 export class ProfileDocument {
   /** We supply our own UUID instead of letting Mongo generate an ObjectId. */
@@ -43,6 +85,9 @@ export class ProfileDocument {
   @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
   interestDetails: Record<string, Record<string, string | string[]>>;
 
+  @Prop({ type: SchemaFactory.createForClass(LocationSubdocument) })
+  location?: LocationSubdocument;
+
   @Prop()
   currentFocus?: string;
 
@@ -54,6 +99,9 @@ export class ProfileDocument {
 
   @Prop({ type: [String], default: [] })
   recentlyShown: string[];
+
+  @Prop({ type: SchemaFactory.createForClass(GeneratedSetSubdocument), default: () => ({ questions: [], generatedAt: null, basis: '' }) })
+  generated: GeneratedSetSubdocument;
 
   // Filled in automatically by `timestamps: true`.
   createdAt: Date;

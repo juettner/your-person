@@ -5,17 +5,19 @@ import type { Question } from './question-bank.js';
 import { hasRequiredDetails } from './question-template.js';
 
 /**
- * Injection token for the question list. Letting the bank be injected (rather
- * than imported directly) is what will allow an LLM-backed or database-backed
- * source to be swapped in later without touching the selection logic.
+ * Injection token for the curated question list. Letting the bank be injected
+ * (rather than imported directly) keeps the selector independent of where
+ * questions come from; AI-written ones arrive per profile via `extra`.
  */
 export const QUESTION_SOURCE = 'QUESTION_SOURCE';
 
 /** Everything the selector needs to know about a profile, and nothing more. */
 export interface SelectionInput {
   interests: readonly string[];
-  /** Follow-up answers; decide whether `requires` questions are eligible. */
+  /** Follow-up answers (plus a `profile` pseudo-interest); decide whether `requires` questions are eligible. */
   details: InterestDetails;
+  /** Questions that exist only for this profile (AI-written). */
+  extra: readonly Question[];
   /** Question ids the user rated -1. Never shown again. */
   hidden: ReadonlySet<string>;
   /** Question ids the user rated +1. Slightly favoured. */
@@ -28,7 +30,7 @@ export interface SelectionInput {
 /** A function returning a float in [0, 1). Injected so tests are deterministic. */
 export type Rng = () => number;
 
-const WEIGHT_DETAIL_MATCH = 5;
+const WEIGHT_PERSONAL = 5; // AI-written or detail-driven
 const WEIGHT_INTEREST_MATCH = 3;
 const WEIGHT_GENERAL = 1;
 const WEIGHT_LIKED_BONUS = 1;
@@ -40,10 +42,11 @@ const WEIGHT_LIKED_BONUS = 1;
  *  1. Hidden questions are out, full stop.
  *  2. Candidates are questions tagged `general` or matching an interest, and
  *     whose `requires` (if any) are all answered in the profile's details.
+ *     AI-written questions are always candidates (they were written for this profile).
  *  3. Prefer questions not shown recently. Fall back to the longest-ago ones
  *     only when there aren't enough fresh candidates.
- *  4. Weighted random: detail-driven questions outweigh interest-matched ones,
- *     which outweigh general ones; liked ones get a bump.
+ *  4. Weighted random: personal questions (AI or detail-driven) outweigh
+ *     interest-matched ones, which outweigh general ones; liked ones get a bump.
  *  5. Avoid two questions about the same interest in one batch when possible.
  */
 @Injectable()
@@ -53,10 +56,11 @@ export class QuestionSelectorService {
   select(input: SelectionInput, rng: Rng = Math.random): Question[] {
     const interests = new Set(input.interests);
     const matchesProfile = (q: Question) =>
-      (q.tags.includes(GENERAL_TAG) || q.tags.some((t) => interests.has(t))) &&
-      hasRequiredDetails(input.details, q.requires);
+      q.source === 'ai' ||
+      ((q.tags.includes(GENERAL_TAG) || q.tags.some((t) => interests.has(t))) &&
+        hasRequiredDetails(input.details, q.requires));
 
-    const candidates = this.bank.filter((q) => !input.hidden.has(q.id) && matchesProfile(q));
+    const candidates = [...this.bank, ...input.extra].filter((q) => !input.hidden.has(q.id) && matchesProfile(q));
 
     const recentIndex = new Map(input.recentlyShown.map((id, i) => [id, i]));
     const fresh = candidates.filter((q) => !recentIndex.has(q.id));
@@ -72,7 +76,7 @@ export class QuestionSelectorService {
 
     const weightOf = (q: Question) => {
       let w = WEIGHT_GENERAL;
-      if (q.requires?.length) w = WEIGHT_DETAIL_MATCH;
+      if (q.source === 'ai' || q.requires?.length) w = WEIGHT_PERSONAL;
       else if (q.tags.some((t) => interests.has(t))) w = WEIGHT_INTEREST_MATCH;
       if (input.liked.has(q.id)) w += WEIGHT_LIKED_BONUS;
       return w;

@@ -18,6 +18,8 @@ export interface Question {
   text: string;
   tags: readonly string[];
   requires?: readonly string[];
+  /** Curated (default) or written by the AI engine for one profile. */
+  source?: 'curated' | 'ai';
 }
 
 const G = GENERAL_TAG;
@@ -163,6 +165,21 @@ export const QUESTION_BANK: readonly Question[] = [
   { id: 'learn01', text: "What's something you've been curious to learn more about?", tags: ['learning'] },
   { id: 'learn02', text: "Is there a class or skill you'd want to pick up this year?", tags: ['learning'] },
   { id: 'learn03', text: 'Learned anything surprising about {learning.topic|lower} lately?', tags: ['learning'], requires: ['learning.topic'] },
+
+  // --- around town (local interest) ---
+  { id: 'loc01', text: "What's a place around here you've been meaning to try?", tags: ['local'] },
+  { id: 'loc02', text: 'If we had a free Saturday morning, where would you want to go?', tags: ['local'] },
+  { id: 'loc03', text: 'When did we last go to {local.spot}? Want to go this week?', tags: ['local'], requires: ['local.spot'] },
+  { id: 'loc04', text: "What do you love about {local.neighborhood}, and what's starting to bug you?", tags: ['local'], requires: ['local.neighborhood'] },
+  { id: 'loc05', text: "Should we finally try {local.wishlist}? I'll book it.", tags: ['local'], requires: ['local.wishlist'] },
+  { id: 'loc06', text: "What's your favorite thing about living in {profile.city} right now?", tags: ['local', G], requires: ['profile.city'] },
+  { id: 'loc07', text: 'Is there anything happening in {profile.city} this month you want to go to?', tags: ['local', G], requires: ['profile.city'] },
+
+  // --- location-aware follow-ups on other interests ---
+  { id: 'cook07', text: 'Is {cooking.spot} still the best, or has somewhere new taken over?', tags: ['cooking'], requires: ['cooking.spot'] },
+  { id: 'spo06', text: 'Want to catch the next game at {sports.watchSpot}?', tags: ['sports'], requires: ['sports.watchSpot'] },
+  { id: 'mus06', text: "Who's playing at {music.venue} soon that you'd actually go see?", tags: ['music'], requires: ['music.venue'] },
+  { id: 'fri04', text: 'When are you next at {friends.hangout}? Should I come along, or is that yours?', tags: ['friends'], requires: ['friends.hangout'] },
 ];
 
 const byId = new Map(QUESTION_BANK.map((q) => [q.id, q]));

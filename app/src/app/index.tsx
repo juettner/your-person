@@ -139,7 +139,7 @@ export default function TodayScreen() {
       {status === 'ready' && current && (
         <>
           <View style={styles.cardArea}>
-            <PromptCard prompt={current} index={index} total={prompts.length} />
+            <PromptCard prompt={current} index={index} total={prompts.length} askName={askName} />
           </View>
 
           <View style={styles.actions}>

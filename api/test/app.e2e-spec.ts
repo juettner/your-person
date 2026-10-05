@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module.js';
+import { GenerationClient, GenerationRequest } from './../src/ai/generation-client.js';
 
 /**
  * End-to-end test through real HTTP against the in-memory storage.
@@ -29,7 +30,7 @@ describe('your-person API (e2e)', () => {
 
   it('GET /api/health reports in-memory storage', async () => {
     const res = await request(app.getHttpServer()).get('/api/health').expect(200);
-    expect(res.body).toEqual({ status: 'ok', storage: 'memory' });
+    expect(res.body).toEqual({ status: 'ok', storage: 'memory', ai: false });
   });
 
   it('GET /api/interests lists the questionnaire chips', async () => {
@@ -93,6 +94,7 @@ describe('your-person API (e2e)', () => {
       id: expect.any(String),
       text: expect.any(String),
       interest: expect.toSatisfy((v: unknown) => v === null || v === 'Gaming'),
+      source: 'curated',
     });
 
     const second = await request(app.getHttpServer()).get(`/api/profiles/${id}/questions?count=2`).expect(200);
@@ -128,7 +130,7 @@ describe('your-person API (e2e)', () => {
   it('serves the follow-up taxonomy with the interests', async () => {
     const res = await request(app.getHttpServer()).get('/api/interests').expect(200);
     const sports = res.body.find((i: { id: string }) => i.id === 'sports');
-    expect(sports.followUps.map((f: { id: string }) => f.id)).toEqual(['sport', 'team', 'involvement']);
+    expect(sports.followUps.map((f: { id: string }) => f.id)).toEqual(['sport', 'team', 'involvement', 'watchSpot']);
     expect(sports.followUps[0]).toMatchObject({ kind: 'choice', multi: true });
     expect(sports.followUps[1]).toMatchObject({ kind: 'text' });
   });
@@ -175,6 +177,37 @@ describe('your-person API (e2e)', () => {
     expect(updated.body.interestDetails).toEqual({});
   });
 
+  it('stores a location and serves city questions', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/api/profiles')
+      .send({ name: 'Sam', interests: ['local'], location: { city: ' Minneapolis ', region: 'MN', country: '' } })
+      .expect(201);
+    expect(created.body.location).toEqual({ city: 'Minneapolis', region: 'MN' });
+
+    let sawCity = false;
+    for (let i = 0; i < 20; i++) {
+      const batch = await request(app.getHttpServer()).get(`/api/profiles/${created.body.id}/questions?count=5`).expect(200);
+      for (const q of batch.body.questions) {
+        expect(q.text).not.toContain('{profile.city}');
+        if (q.text.includes('Minneapolis')) sawCity = true;
+      }
+    }
+    expect(sawCity).toBe(true);
+
+    await request(app.getHttpServer()).post('/api/profiles').send({ name: 'Sam', interests: [], location: { city: '' } }).expect(400);
+    const cleared = await request(app.getHttpServer()).patch(`/api/profiles/${created.body.id}`).send({ location: null }).expect(200);
+    expect(cleared.body.location).toBeUndefined();
+  });
+
+  it('reports the AI engine as off and makes the generate endpoint a no-op', async () => {
+    const health = await request(app.getHttpServer()).get('/api/health').expect(200);
+    expect(health.body.ai).toBe(false);
+    const created = await request(app.getHttpServer()).post('/api/profiles').send({ name: 'Sam', interests: [] }).expect(201);
+    const res = await request(app.getHttpServer()).post(`/api/profiles/${created.body.id}/questions/generate`).expect(201);
+    expect(res.body).toEqual({ enabled: false, generated: 0 });
+    expect(created.body.aiQuestionCount).toBe(0);
+  });
+
   it('validates ratings', async () => {
     const created = await request(app.getHttpServer())
       .post('/api/profiles')
@@ -188,5 +221,87 @@ describe('your-person API (e2e)', () => {
       .post(`/api/profiles/${created.body.id}/questions/does-not-exist/rating`)
       .send({ score: 1 })
       .expect(404);
+  });
+});
+
+/**
+ * The same app with a fake language model plugged into the AI port, so the
+ * whole generate -> select -> rate loop runs without a key or network.
+ */
+describe('your-person API with the AI engine (e2e)', () => {
+  let app: INestApplication<App>;
+  let calls = 0;
+
+  class FakeGenerationClient extends GenerationClient {
+    readonly enabled = true;
+    async generateQuestions(request: GenerationRequest) {
+      calls++;
+      expect(request.user).toContain("Partner's name: Sam");
+      expect(request.user).toContain('team: Vikings');
+      return [
+        { text: 'How are the Vikings looking this week, honestly?', interest: 'sports', basis: 'team' },
+        { text: 'Want to try that new Thai place in Minneapolis on Friday?', interest: 'cooking', basis: 'cuisine + city' },
+        { text: "What's one thing that would make your week lighter?", interest: null, basis: 'general' },
+      ];
+    }
+    async research() {
+      return null;
+    }
+  }
+
+  beforeAll(async () => {
+    delete process.env.MONGODB_URI;
+    const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(GenerationClient)
+      .useValue(new FakeGenerationClient())
+      .compile();
+    app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api');
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('writes a deck on demand, mixes it into prompts, and lets it be rated and hidden', async () => {
+    const health = await request(app.getHttpServer()).get('/api/health').expect(200);
+    expect(health.body.ai).toBe(true);
+
+    const created = await request(app.getHttpServer())
+      .post('/api/profiles')
+      .send({
+        name: 'Sam',
+        interests: ['sports', 'cooking'],
+        interestDetails: { sports: { sport: ['Football'], team: 'Vikings' }, cooking: { cuisine: ['Thai'] } },
+        location: { city: 'Minneapolis', region: 'MN' },
+      })
+      .expect(201);
+    const id = created.body.id;
+
+    const gen = await request(app.getHttpServer()).post(`/api/profiles/${id}/questions/generate`).expect(201);
+    expect(gen.body).toEqual({ enabled: true, generated: 3 });
+    expect(calls).toBeGreaterThanOrEqual(1);
+
+    const profile = await request(app.getHttpServer()).get(`/api/profiles/${id}`).expect(200);
+    expect(profile.body.aiQuestionCount).toBe(3);
+    expect(profile.body.aiGeneratedAt).toBeTruthy();
+
+    // AI questions are weighted heavily; over a few batches we must see one.
+    let aiPrompt: { id: string; text: string; source: string } | undefined;
+    for (let i = 0; i < 10 && !aiPrompt; i++) {
+      const batch = await request(app.getHttpServer()).get(`/api/profiles/${id}/questions?count=5`).expect(200);
+      aiPrompt = batch.body.questions.find((q: { source: string }) => q.source === 'ai');
+    }
+    expect(aiPrompt).toBeDefined();
+    expect(aiPrompt!.id).toMatch(/^ai-/);
+
+    // Rate it like any other question.
+    await request(app.getHttpServer()).post(`/api/profiles/${id}/questions/${aiPrompt!.id}/rating`).send({ score: -1 }).expect(201);
+    for (let i = 0; i < 20; i++) {
+      const batch = await request(app.getHttpServer()).get(`/api/profiles/${id}/questions?count=5`).expect(200);
+      for (const q of batch.body.questions) expect(q.id).not.toBe(aiPrompt!.id);
+    }
   });
 });

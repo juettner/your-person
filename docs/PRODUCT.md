@@ -27,6 +27,14 @@ The user is one half of the couple. They set up a profile *about* their person. 
 | **Today** | Show questions | One question on a card. Big text. "Ask Sam" at the top. "Nope" hides it, "Good one" keeps it coming back, "Next card" advances. Three per batch, then deal three more. |
 | **Profile** | Update the profile and pick a look | Same cards as onboarding, pre-filled. Save from the first card or walk into the details. Five color palettes to choose from. |
 
+### Where they live
+
+The first card asks for a city, with a "Use my location" shortcut that fills it from the phone. Only the city name is kept. It unlocks "Around town" questions and anchors the AI research step (what's on in Minneapolis this month, which new Thai place opened).
+
+### Questions written for this person
+
+With an API key configured, the backend asks Claude to write a deck of ten questions from the whole profile: name, city, every follow-up answer, what's going on lately, and which questions the asker liked or hid. Optionally it first web-searches for timely local facts (the team's next game, a festival this month). Those questions appear in the normal rotation marked "Written for Sam", carry the most weight, and are rated and hidden like any other. The deck refreshes itself when it goes stale or the profile changes. Without a key, nothing changes: the curated bank carries the app.
+
 ### Why go deep on interests
 
 "They like sports" produces a generic question. "They follow the Vikings" produces "How are the Vikings looking right now, honestly?" The follow-ups exist to turn the question bank from a list of pleasantries into something that sounds like it knows your person. Each interest has two or three follow-ups, and the question bank has templates that use those answers (`docs/ARCHITECTURE.md`, "Deep interests").

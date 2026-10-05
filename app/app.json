@@ -27,7 +27,13 @@
     },
     "scheme": "yourperson",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Your Person uses your location only to fill in the city your person lives in. Only the city name is saved."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

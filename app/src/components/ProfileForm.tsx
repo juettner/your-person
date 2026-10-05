@@ -28,7 +28,8 @@ import { FollowUpFields } from '@/components/FollowUpFields';
 import { InterestChips } from '@/components/InterestChips';
 import { usePalette } from '@/components/ThemeProvider';
 import { Fonts, Radius, Spacing } from '@/constants/theme';
-import { api, describeError, Interest, InterestDetails, ProfileInput } from '@/lib/api';
+import { api, describeError, Interest, InterestDetails, ProfileInput, ProfileLocation } from '@/lib/api';
+import { detectLocation } from '@/lib/location';
 
 interface ProfileFormProps {
   initial?: ProfileInput;
@@ -53,6 +54,11 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
   const [interests, setInterests] = useState<string[]>(initial?.interests ?? []);
   const [currentFocus, setCurrentFocus] = useState(initial?.currentFocus ?? '');
   const [details, setDetails] = useState<InterestDetails>(initial?.interestDetails ?? {});
+  // Location is kept as a place name. `city` is what the user sees and edits;
+  // region/country ride along from "Use my location" when available.
+  const [location, setLocation] = useState<ProfileLocation | null>(initial?.location ?? null);
+  const [locating, setLocating] = useState(false);
+  const [locationNote, setLocationNote] = useState<string | null>(null);
   const [step, setStep] = useState(0);
 
   const [options, setOptions] = useState<Interest[] | null>(null);
@@ -92,10 +98,13 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
     setSubmitting(true);
     setSubmitError(null);
     try {
+      const city = location?.city.trim();
       await onSubmit({
         name: name.trim(),
         interests,
         interestDetails: details,
+        // An empty city clears the location; the API treats null as "remove".
+        location: city ? { ...location, city } : null,
         currentFocus: currentFocus.trim() || undefined,
       });
     } catch (err) {
@@ -107,6 +116,20 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
 
   const next = () => (isLast ? submit() : setStep((s) => s + 1));
   const back = () => setStep((s) => Math.max(0, s - 1));
+
+  const useMyLocation = async () => {
+    setLocating(true);
+    setLocationNote(null);
+    const result = await detectLocation();
+    if (result.status === 'ok') {
+      setLocation(result.location);
+    } else if (result.status === 'denied') {
+      setLocationNote('Location permission was turned down. You can type the city instead.');
+    } else {
+      setLocationNote("Couldn't work out a city here. Type it in instead.");
+    }
+    setLocating(false);
+  };
 
   const inputStyle = [styles.input, { color: p.ink, borderColor: p.ink, backgroundColor: p.card }];
 
@@ -150,6 +173,35 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
                 style={inputStyle}
                 accessibilityLabel="Their name"
               />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: p.ink }]}>Where they live</Text>
+              <TextInput
+                value={location?.city ?? ''}
+                // Typing replaces any detected region/country: we can't trust them for a new city.
+                onChangeText={(city) => setLocation(city ? { city } : null)}
+                placeholder="Minneapolis"
+                placeholderTextColor={p.muted}
+                autoCapitalize="words"
+                autoCorrect={false}
+                maxLength={80}
+                style={inputStyle}
+                accessibilityLabel="Where they live"
+              />
+              <View style={styles.inlineRow}>
+                <Button
+                  title={locating ? 'Finding you...' : 'Use my location'}
+                  variant="link"
+                  onPress={useMyLocation}
+                  disabled={locating}
+                  style={styles.inlineLink}
+                />
+                {location?.region ? (
+                  <Text style={[styles.note, { color: p.muted }]}>{[location.region, location.country].filter(Boolean).join(', ')}</Text>
+                ) : null}
+              </View>
+              {locationNote && <Text style={[styles.note, { color: p.muted }]}>{locationNote}</Text>}
             </View>
 
             <View style={styles.field}>
@@ -264,6 +316,18 @@ const styles = StyleSheet.create({
   error: {
     fontFamily: Fonts.bold,
     fontSize: 14,
+  },
+  inlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  inlineLink: {
+    minHeight: 36,
+  },
+  note: {
+    fontFamily: Fonts.medium,
+    fontSize: 13,
   },
   actions: {
     gap: Spacing.md,

@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { GenerationScheduler } from '../ai/generation-scheduler.service.js';
 import { ProfileRepository } from '../profiles/profile.repository.js';
 import { ProfilesService } from '../profiles/profiles.service.js';
-import { InterestDetails, RECENTLY_SHOWN_LIMIT, Score } from '../profiles/profile.model.js';
+import { InterestDetails, PartnerProfile, RECENTLY_SHOWN_LIMIT, Score } from '../profiles/profile.model.js';
 import { GENERAL_TAG, interestLabel } from './interests.js';
 import { findQuestion, Question } from './question-bank.js';
 import { QuestionSelectorService } from './question-selector.service.js';
@@ -14,6 +15,8 @@ export interface PromptResponse {
   text: string;
   /** Human label of the matched interest, or null for a general question. */
   interest: string | null;
+  /** Where it came from: the hand-written bank, or the AI engine for this profile. */
+  source: 'curated' | 'ai';
 }
 
 export interface PromptsResponse {
@@ -29,12 +32,18 @@ export interface RatingResponse {
   hidden: boolean;
 }
 
+export interface GenerateResponse {
+  enabled: boolean;
+  generated: number;
+}
+
 @Injectable()
 export class QuestionsService {
   constructor(
     private readonly profilesService: ProfilesService,
     private readonly profiles: ProfileRepository,
     private readonly selector: QuestionSelectorService,
+    private readonly scheduler: GenerationScheduler,
   ) {}
 
   async getPrompts(profileId: string, count: number): Promise<PromptsResponse> {
@@ -42,10 +51,12 @@ export class QuestionsService {
 
     const hidden = new Set(profile.feedback.filter((f) => f.score === -1).map((f) => f.questionId));
     const liked = new Set(profile.feedback.filter((f) => f.score === 1).map((f) => f.questionId));
+    const details = templateContext(profile);
 
     const chosen = this.selector.select({
       interests: profile.interests,
-      details: profile.interestDetails,
+      details,
+      extra: aiQuestions(profile),
       hidden,
       liked,
       recentlyShown: profile.recentlyShown,
@@ -60,17 +71,19 @@ export class QuestionsService {
     ].slice(-RECENTLY_SHOWN_LIMIT);
     await this.profiles.save(profile);
 
+    // Top up the AI deck in the background when it is empty, old, or mostly hidden.
+    if (this.scheduler.isStale(profile)) this.scheduler.refreshInBackground(profile.id);
+
     return {
       askName: profile.name,
-      questions: chosen.map((q) => toPrompt(q, profile.interests, profile.interestDetails)),
+      questions: chosen.map((q) => toPrompt(q, profile.interests, details)),
     };
   }
 
   async rate(profileId: string, questionId: string, score: Score): Promise<RatingResponse> {
-    if (!findQuestion(questionId)) {
-      throw new NotFoundException(`Question ${questionId} not found`);
-    }
     const profile = await this.profilesService.load(profileId);
+    const known = findQuestion(questionId) ?? profile.generated.questions.find((q) => q.id === questionId);
+    if (!known) throw new NotFoundException(`Question ${questionId} not found`);
 
     // Upsert: a person can change their mind, so the latest rating replaces the old one.
     profile.feedback = [
@@ -82,13 +95,34 @@ export class QuestionsService {
 
     return { questionId, score, hidden: score === -1 };
   }
+
+  /** Explicit refresh of the AI deck; waits for it. */
+  async generate(profileId: string): Promise<GenerateResponse> {
+    await this.profilesService.load(profileId); // 404 if missing
+    if (!this.scheduler.enabled) return { enabled: false, generated: 0 };
+    const generated = await this.scheduler.refresh(profileId);
+    return { enabled: true, generated };
+  }
+}
+
+/** Follow-up answers plus a `profile` pseudo-interest so templates can say {profile.city}. */
+function templateContext(profile: PartnerProfile): InterestDetails {
+  return {
+    ...profile.interestDetails,
+    profile: { city: profile.location?.city ?? '' },
+  };
+}
+
+function aiQuestions(profile: PartnerProfile): Question[] {
+  return profile.generated.questions.map((q) => ({ id: q.id, text: q.text, tags: q.tags, source: 'ai' as const }));
 }
 
 function toPrompt(question: Question, interests: readonly string[], details: InterestDetails): PromptResponse {
   const matched = question.tags.find((t) => t !== GENERAL_TAG && interests.includes(t));
   return {
     id: question.id,
-    text: renderTemplate(question.text, details),
+    text: question.source === 'ai' ? question.text : renderTemplate(question.text, details),
     interest: matched ? (interestLabel(matched) ?? null) : null,
+    source: question.source ?? 'curated',
   };
 }

@@ -10,6 +10,7 @@ const DEFAULT_COUNT = 3;
  * Prompts are a sub-resource of a profile:
  *   GET  /api/profiles/:profileId/questions?count=3
  *   POST /api/profiles/:profileId/questions/:questionId/rating   { "score": 1 | -1 }
+ *   POST /api/profiles/:profileId/questions/generate               refresh the AI deck now
  */
 @Controller('profiles/:profileId/questions')
 export class QuestionsController {
@@ -22,6 +23,11 @@ export class QuestionsController {
   ) {
     const clamped = Math.min(MAX_COUNT, Math.max(MIN_COUNT, count));
     return this.service.getPrompts(profileId, clamped);
+  }
+
+  @Post('generate')
+  generate(@Param('profileId') profileId: string) {
+    return this.service.generate(profileId);
   }
 
   @Post(':questionId/rating')

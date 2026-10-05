@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AiModule } from './ai/ai.module.js';
 import { HealthController } from './health/health.controller.js';
 import { PersistenceModule } from './persistence/persistence.module.js';
 import { ProfilesModule } from './profiles/profiles.module.js';
@@ -15,6 +16,7 @@ import { QuestionsModule } from './questions/questions.module.js';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PersistenceModule.forRoot(),
+    AiModule.forRoot(),
     ProfilesModule,
     QuestionsModule,
   ],

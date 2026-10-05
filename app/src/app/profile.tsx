@@ -49,6 +49,29 @@ export default function ProfileScreen() {
     router.replace('/onboarding');
   };
 
+  // Ask the server to write a fresh AI deck. Harmless when the engine is off.
+  const [aiNote, setAiNote] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const refreshAi = async () => {
+    if (!profile) return;
+    setGenerating(true);
+    setAiNote(null);
+    try {
+      const res = await api.generate(profile.id);
+      setAiNote(
+        res.enabled
+          ? `Wrote ${res.generated} new question${res.generated === 1 ? '' : 's'} for ${profile.name}.`
+          : 'AI questions are switched off on this server.',
+      );
+      const fresh = await api.getProfile(profile.id);
+      setProfile(fresh);
+    } catch (err) {
+      setAiNote(describeError(err));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const header = (
     <View style={styles.header}>
       <Button title="Back" variant="link" onPress={() => router.back()} style={styles.back} />
@@ -93,6 +116,18 @@ export default function ProfileScreen() {
                 You&apos;ve hidden {profile.hiddenCount} question{profile.hiddenCount === 1 ? '' : 's'}.
               </Text>
             )}
+            {profile.aiQuestionCount > 0 && (
+              <Text style={[styles.hint, { color: p.onGround }]}>
+                {profile.aiQuestionCount} question{profile.aiQuestionCount === 1 ? '' : 's'} written just for {profile.name}.
+              </Text>
+            )}
+            <Button
+              title={generating ? 'Writing...' : 'Write new AI questions'}
+              variant="outline"
+              onPress={refreshAi}
+              disabled={generating}
+            />
+            {aiNote && <Text style={[styles.hint, { color: p.onGround }]}>{aiNote}</Text>}
             <Button title="Start over with a new profile" variant="link" onPress={startOver} style={styles.centerLink} />
           </>
         }

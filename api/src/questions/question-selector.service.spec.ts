@@ -13,6 +13,7 @@ describe('QuestionSelectorService', () => {
     const result = selector().select({
       interests: ['cooking'],
       details: {},
+      extra: [],
       hidden: new Set(),
       liked: new Set(),
       recentlyShown: [],
@@ -25,6 +26,8 @@ describe('QuestionSelectorService', () => {
     const hidden = new Set(QUESTION_BANK.filter((q) => q.tags.includes('general')).map((q) => q.id));
     const result = selector().select({
       interests: [],
+      details: {},
+      extra: [],
       hidden,
       liked: new Set(),
       recentlyShown: [],
@@ -39,6 +42,7 @@ describe('QuestionSelectorService', () => {
       const result = selector().select({
         interests: ['gaming'],
         details: {},
+      extra: [],
       hidden: new Set(),
         liked: new Set(),
         recentlyShown: [],
@@ -51,11 +55,13 @@ describe('QuestionSelectorService', () => {
   });
 
   it('prefers fresh questions over recently shown ones', () => {
-    const general = QUESTION_BANK.filter((q) => q.tags.includes('general')).map((q) => q.id);
+    // General questions that need no details (city questions are general but require profile.city).
+    const general = QUESTION_BANK.filter((q) => q.tags.includes('general') && !q.requires?.length).map((q) => q.id);
     const recentlyShown = general.slice(0, general.length - 2);
     const result = selector().select({
       interests: [],
       details: {},
+      extra: [],
       hidden: new Set(),
       liked: new Set(),
       recentlyShown,
@@ -65,10 +71,10 @@ describe('QuestionSelectorService', () => {
   });
 
   it('falls back to the longest-ago questions when the pool runs dry', () => {
-    const general = QUESTION_BANK.filter((q) => q.tags.includes('general')).map((q) => q.id);
+    const general = QUESTION_BANK.filter((q) => q.tags.includes('general') && !q.requires?.length).map((q) => q.id);
     // Everything has been shown; oldest first.
     const result = selector().select(
-      { interests: [], details: {}, hidden: new Set(), liked: new Set(), recentlyShown: general, count: 2 },
+      { interests: [], details: {}, extra: [], hidden: new Set(), liked: new Set(), recentlyShown: general, count: 2 },
       fixed(0),
     );
     expect(result.map((q) => q.id)).toEqual(general.slice(0, 2));
@@ -79,6 +85,7 @@ describe('QuestionSelectorService', () => {
       const result = selector().select({
         interests: ['reading', 'music'],
         details: {},
+      extra: [],
       hidden: new Set(),
         liked: new Set(),
         recentlyShown: [],
@@ -93,6 +100,7 @@ describe('QuestionSelectorService', () => {
     const withoutDetails = selector().select({
       interests: ['sports'],
       details: {},
+      extra: [],
       hidden: new Set(),
       liked: new Set(),
       recentlyShown: [],
@@ -103,6 +111,7 @@ describe('QuestionSelectorService', () => {
     const withDetails = selector().select({
       interests: ['sports'],
       details: { sports: { team: 'Vikings' } },
+      extra: [],
       hidden: new Set(),
       liked: new Set(),
       recentlyShown: [],
@@ -112,5 +121,25 @@ describe('QuestionSelectorService', () => {
     expect(ids).toContain('spo03');
     expect(ids).toContain('spo04');
     expect(ids).not.toContain('spo05'); // needs sports.sport, which is not answered
+  });
+
+  it('always offers AI questions for the profile and favours them', () => {
+    const extra = [{ id: 'ai-1', text: 'Made for you', tags: ['general'], source: 'ai' as const }];
+    const result = selector().select(
+      { interests: [], details: {}, extra, hidden: new Set(), liked: new Set(), recentlyShown: [], count: 1 },
+      () => 0, // the first (heaviest-first? no: first in weighted order) candidate... see below
+    );
+    expect(result).toHaveLength(1);
+
+    let aiPicks = 0;
+    for (let i = 0; i < 200; i++) {
+      const [q] = selector().select({ interests: [], details: {}, extra, hidden: new Set(), liked: new Set(), recentlyShown: [], count: 1 });
+      if (q.id === 'ai-1') aiPicks++;
+    }
+    // 14 general questions at weight 1 vs one AI question at weight 5: ~26% expected.
+    expect(aiPicks).toBeGreaterThan(20);
+
+    const hiddenResult = selector().select({ interests: [], details: {}, extra, hidden: new Set(['ai-1']), liked: new Set(), recentlyShown: [], count: 50 });
+    expect(hiddenResult.some((q) => q.id === 'ai-1')).toBe(false);
   });
 });

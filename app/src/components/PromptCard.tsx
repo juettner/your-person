@@ -11,9 +11,11 @@ interface PromptCardProps {
   prompt: Prompt;
   index: number;
   total: number;
+  /** Your person's name, for the "made for Sam" note on AI-written questions. */
+  askName: string;
 }
 
-export function PromptCard({ prompt, index, total }: PromptCardProps) {
+export function PromptCard({ prompt, index, total, askName }: PromptCardProps) {
   const p = usePalette();
   return (
     <Card style={styles.tilt} contentStyle={styles.content}>
@@ -29,7 +31,9 @@ export function PromptCard({ prompt, index, total }: PromptCardProps) {
         {prompt.text}
       </Text>
       <View style={[styles.rule, { backgroundColor: p.ink }]} />
-      <Text style={[styles.hint, { color: p.muted }]}>Rate it so your deck gets better.</Text>
+      <Text style={[styles.hint, { color: p.muted }]}>
+        {prompt.source === 'ai' ? `Written for ${askName}. Rate it to teach the deck.` : 'Rate it so your deck gets better.'}
+      </Text>
     </Card>
   );
 }

@@ -36,10 +36,19 @@ export interface Interest {
 /** Answers keyed by interest id, then follow-up id. Multi-choice answers are arrays. */
 export type InterestDetails = Record<string, Record<string, string | string[]>>;
 
+/** Where your person lives, as a place name. No coordinates are ever sent. */
+export interface ProfileLocation {
+  city: string;
+  region?: string;
+  country?: string;
+}
+
 export interface ProfileInput {
   name: string;
   interests: string[];
   interestDetails?: InterestDetails;
+  /** `null` clears a previously saved location. */
+  location?: ProfileLocation | null;
   currentFocus?: string;
   notes?: string;
 }
@@ -49,6 +58,9 @@ export interface Profile extends ProfileInput {
   createdAt: string;
   updatedAt: string;
   hiddenCount: number;
+  /** AI-written questions currently in this profile's deck (0 when the engine is off). */
+  aiQuestionCount: number;
+  aiGeneratedAt: string | null;
 }
 
 export interface Prompt {
@@ -56,6 +68,13 @@ export interface Prompt {
   text: string;
   /** Label of the interest this question matched, or null for a general one. */
   interest: string | null;
+  /** Hand-written bank, or written by the AI engine for this profile. */
+  source: 'curated' | 'ai';
+}
+
+export interface GenerateResponse {
+  enabled: boolean;
+  generated: number;
 }
 
 export interface PromptsResponse {
@@ -142,4 +161,8 @@ export const api = {
       `/profiles/${encodeURIComponent(id)}/questions/${encodeURIComponent(questionId)}/rating`,
       { method: 'POST', body: JSON.stringify({ score }) },
     ),
+
+  /** Ask the server to write a fresh AI deck now. Takes a few seconds when enabled. */
+  generate: (id: string) =>
+    request<GenerateResponse>(`/profiles/${encodeURIComponent(id)}/questions/generate`, { method: 'POST' }),
 };

@@ -54,6 +54,7 @@ export const INTERESTS: readonly Interest[] = [
       choice('cuisine', 'Which cuisines do they reach for?', ['Italian', 'Mexican', 'Thai', 'Indian', 'Japanese', 'Mediterranean', 'American comfort', 'Barbecue'], true),
       choice('style', 'How do they cook?', ['Follows recipes', 'Improvises', 'Mostly bakes']),
       text('dish', "A dish they're proud of?", 'Their lasagna, Sunday pancakes...'),
+      text('spot', 'Their favorite local restaurant?', 'Hai Hai, the taco truck on Lake...'),
     ],
   },
   {
@@ -103,6 +104,7 @@ export const INTERESTS: readonly Interest[] = [
       choice('genre', 'What do they listen to?', ['Rock', 'Pop', 'Hip-hop', 'Country', 'Jazz', 'Classical', 'Electronic', 'Indie', 'Metal', 'R&B', 'Folk'], true),
       text('artist', 'Artists they keep coming back to?', 'Bon Iver, Beyoncé...'),
       choice('live', 'Live shows?', ['Loves a concert', 'Prefers headphones']),
+      text('venue', 'A local venue they love?', 'First Avenue, the Dakota...'),
     ],
   },
   {
@@ -144,6 +146,7 @@ export const INTERESTS: readonly Interest[] = [
       choice('sport', 'Which sport?', ['Football', 'Basketball', 'Baseball', 'Hockey', 'Soccer', 'Golf', 'Tennis', 'Pickleball'], true),
       text('team', 'Which team?', 'Vikings, Lynx, Wild...'),
       choice('involvement', 'Fan, player, or both?', ['Watches', 'Plays', 'Both']),
+      text('watchSpot', 'Where do they like to watch games?', 'The couch, the stadium, a bar with friends...'),
     ],
   },
   {
@@ -160,6 +163,7 @@ export const INTERESTS: readonly Interest[] = [
     followUps: [
       text('names', 'Their closest friends?', 'Priya, the college group...'),
       choice('cadence', 'How often do they see them?', ['Weekly', 'Mostly texting', 'Wishes it were more']),
+      text('hangout', 'Where do they usually meet up?', 'Trivia night at the Nook, the climbing gym...'),
     ],
   },
   {
@@ -208,6 +212,16 @@ export const INTERESTS: readonly Interest[] = [
     followUps: [
       text('project', 'The project on their list?', 'The basement, a new fence...'),
       choice('style', 'How do they like to do it?', ['DIY all the way', 'Hire it out', 'Depends on the mess']),
+    ],
+  },
+  {
+    id: 'local',
+    label: 'Around town',
+    followUps: [
+      text('neighborhood', 'What part of town are they in?', 'Northeast, Uptown, the suburbs...'),
+      text('spot', 'A spot they keep going back to?', 'The coffee shop on the corner, the lake path...'),
+      text('wishlist', "A place they've been meaning to try?", 'That new ramen place, the climbing gym...'),
+      choice('weekend', 'Their ideal weekend around town?', ['Farmers market', 'Long walk', 'Brunch', 'A show', 'Staying in']),
     ],
   },
   {

@@ -1,7 +1,18 @@
-import { ArrayMaxSize, IsArray, IsIn, IsOptional, IsString, Length, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  Length,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
 import { INTEREST_IDS } from '../../questions/interests.js';
 import type { InterestDetails } from '../profile.model.js';
 import { IsInterestDetails } from './interest-details.validator.js';
+import { LocationDto } from './location.dto.js';
 
 /** Request body for PATCH /api/profiles/:id. Every field is optional; only sent fields change. */
 export class UpdateProfileDto {
@@ -20,6 +31,12 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsInterestDetails()
   interestDetails?: InterestDetails;
+
+  /** Send `null` to clear the location. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocationDto)
+  location?: LocationDto | null;
 
   @IsOptional()
   @IsString()

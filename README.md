@@ -39,6 +39,8 @@ npm run web          # opens in the browser
 
 On a physical phone, the app cannot reach `localhost`. Copy `app/.env.example` to `app/.env` and set `EXPO_PUBLIC_API_URL` to your computer's LAN address.
 
+**AI questions.** Set `ANTHROPIC_API_KEY` in `api/.env` and the API starts writing a personalized deck per profile with Claude. Add `AI_RESEARCH=true` to let it web-search for timely local facts first. Without a key everything runs on the curated bank. See `docs/ARCHITECTURE.md`, "The AI question engine".
+
 ## Checks
 
 ```bash

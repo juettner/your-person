@@ -9,6 +9,9 @@ Phases, not dates. Each phase should be shippable on its own.
 - [x] Runs on web with no infrastructure; iOS and Android via Expo Go
 - [x] Index Card look with five selectable palettes
 - [x] Deep interests: per-interest follow-up cards in onboarding, answers feed templated questions
+- [x] Location as a place name, "Around town" interest, local follow-ups and city questions
+- [x] AI question engine: Claude writes a per-profile deck from the whole profile and feedback, optional web research, mixed into selection, rated like curated questions
+- [ ] Turn the engine on with a real key and read a few decks critically; tune the system prompt from what comes back
 - [ ] Try it on a real phone with Expo Go and fix what feels wrong
 
 ## Phase 1: make it real
@@ -27,9 +30,10 @@ Phases, not dates. Each phase should be shippable on its own.
 
 ## Phase 3: better questions
 
-- Use `currentFocus` in selection, not just display
 - More template questions per follow-up; "Other" free text on choice chips
-- LLM-generated questions behind the existing `QUESTION_SOURCE` port, with the curated bank as fallback. The follow-up answers are the natural prompt context. Generate a small batch per profile, cache it, let ratings prune it exactly like curated ones.
+- Research step: look up a venue's calendar, the team's schedule, the farmers market's season; cache briefs per city so profiles in the same town share lookups
+- Let the engine propose new follow-up questions for the taxonomy when it notices a gap ("they said hockey; ask which league")
+- A nightly refresh for active profiles instead of refresh-on-read, once there is a job runner
 - Seasonal and situational prompts (new job, new baby, moved house)
 - Let users write their own questions
 

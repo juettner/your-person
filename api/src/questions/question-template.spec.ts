@@ -33,8 +33,13 @@ describe('question templates', () => {
     for (const q of QUESTION_BANK) {
       for (const m of q.text.matchAll(re)) {
         const key = `${m[1]}.${m[2]}`;
-        expect(findFollowUp(m[1], m[2]), `${q.id}: ${key} is not a follow-up`).toBeDefined();
         expect(q.requires ?? [], `${q.id}: ${key} missing from requires`).toContain(key);
+        if (m[1] === 'profile') {
+          // The `profile` namespace is filled from the profile itself (city), not from a follow-up.
+          expect(m[2]).toBe('city');
+          continue;
+        }
+        expect(findFollowUp(m[1], m[2]), `${q.id}: ${key} is not a follow-up`).toBeDefined();
         expect(q.tags, `${q.id}: should be tagged ${m[1]}`).toContain(m[1]);
       }
     }

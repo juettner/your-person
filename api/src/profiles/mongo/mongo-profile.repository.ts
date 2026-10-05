@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import type { PartnerProfile } from '../profile.model.js';
+import { EMPTY_GENERATED, type PartnerProfile } from '../profile.model.js';
 import { ProfileRepository } from '../profile.repository.js';
 import { ProfileDocument } from './profile.schema.js';
 
@@ -49,6 +49,7 @@ function toDomain(doc: ProfileDocument): PartnerProfile {
     name: doc.name,
     interests: doc.interests ?? [],
     interestDetails: doc.interestDetails ?? {},
+    location: doc.location ? { city: doc.location.city, region: doc.location.region, country: doc.location.country } : undefined,
     currentFocus: doc.currentFocus,
     notes: doc.notes,
     feedback: (doc.feedback ?? []).map((f) => ({
@@ -57,6 +58,19 @@ function toDomain(doc: ProfileDocument): PartnerProfile {
       ratedAt: f.ratedAt,
     })),
     recentlyShown: doc.recentlyShown ?? [],
+    generated: doc.generated
+      ? {
+          questions: (doc.generated.questions ?? []).map((q) => ({
+            id: q.id,
+            text: q.text,
+            tags: q.tags ?? [],
+            basis: q.basis ?? '',
+            createdAt: q.createdAt,
+          })),
+          generatedAt: doc.generated.generatedAt ?? null,
+          basis: doc.generated.basis ?? '',
+        }
+      : { ...EMPTY_GENERATED },
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -67,9 +81,11 @@ function toDocument(profile: PartnerProfile): Partial<ProfileDocument> {
     name: profile.name,
     interests: profile.interests,
     interestDetails: profile.interestDetails,
+    location: profile.location,
     currentFocus: profile.currentFocus,
     notes: profile.notes,
     feedback: profile.feedback,
     recentlyShown: profile.recentlyShown,
+    generated: profile.generated,
   };
 }
