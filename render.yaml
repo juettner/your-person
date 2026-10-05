@@ -1,0 +1,20 @@
+# Render blueprint: connect the repo in the Render dashboard and it reads this
+# file. Set MONGODB_URI (and optionally ANTHROPIC_API_KEY) in the service's
+# environment after the first deploy.
+services:
+  - type: web
+    name: your-person-api
+    runtime: docker
+    rootDir: api
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: MONGODB_URI
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: AI_RESEARCH
+        value: "false"

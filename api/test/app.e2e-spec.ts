@@ -14,6 +14,7 @@ describe('your-person API (e2e)', () => {
 
   beforeAll(async () => {
     delete process.env.MONGODB_URI; // force in-memory storage
+    process.env.RATE_LIMIT_PER_MINUTE = '100000'; // the suite fires hundreds of requests
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -251,6 +252,7 @@ describe('your-person API with the AI engine (e2e)', () => {
 
   beforeAll(async () => {
     delete process.env.MONGODB_URI;
+    process.env.RATE_LIMIT_PER_MINUTE = '100000';
     const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(GenerationClient)
       .useValue(new FakeGenerationClient())

@@ -41,6 +41,10 @@ On a physical phone, the app cannot reach `localhost`. Copy `app/.env.example` t
 
 **AI questions.** Set `ANTHROPIC_API_KEY` in `api/.env` and the API starts writing a personalized deck per profile with Claude. Add `AI_RESEARCH=true` to let it web-search for timely local facts first. Without a key everything runs on the curated bank. See `docs/ARCHITECTURE.md`, "The AI question engine".
 
+## Deploying
+
+The API ships as a Docker image with configs for Fly.io (`api/fly.toml`) and Render (`render.yaml`). [`docs/DEPLOY.md`](docs/DEPLOY.md) walks through MongoDB Atlas and either host in about half an hour. [`docs/NATIVE-BUILDS.md`](docs/NATIVE-BUILDS.md) covers getting the iPhone and Android builds onto a phone.
+
 ## Checks
 
 ```bash
