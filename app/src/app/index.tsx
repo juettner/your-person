@@ -6,6 +6,7 @@
  * State lives in this component. For an app this size that is the right
  * amount of architecture; a global store (Redux, Zustand) would be overkill.
  */
+import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -85,6 +86,8 @@ export default function TodayScreen() {
   const rate = async (score: Score) => {
     if (!profileId || !current || rating) return;
     setRating(true);
+    // A small physical tap on the phone for each thumb. Not supported on web; ignore failures.
+    Haptics.impactAsync(score === 1 ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     // Optimistic update: show the choice immediately, then tell the server.
     setRatings((r) => ({ ...r, [current.id]: score }));
     try {

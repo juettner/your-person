@@ -53,6 +53,16 @@ Builds take 10 to 20 minutes in the cloud. The free tier includes a limited numb
 
 **Point the build at a real API.** The `preview` and `production` profiles set `EXPO_PUBLIC_API_URL`. Replace the placeholder with wherever the API is deployed (`docs/ARCHITECTURE.md`, "Deployment sketch"). A phone cannot reach `localhost`.
 
+## Building from GitHub instead of your laptop
+
+`.github/workflows/eas-build.yml` runs the same `eas build` on GitHub's machines. One-time setup: run `npx eas-cli@latest init` in `app/` once (it writes the project id into `app.json`; commit it), create an access token in your Expo account settings, and add it to the repo as the secret `EXPO_TOKEN`. Then start the workflow from the Actions tab, pick iOS and `preview`, and EAS emails you a link to install the build on your phone when it finishes.
+
+`.github/workflows/ci.yml` runs the API and app checks on every push with no secrets.
+
+## What has been verified without a Mac
+
+`npx expo prebuild --platform ios` generates the Xcode project cleanly from `app.json`: display name "Your Person", bundle identifier `com.juettner.yourperson`, and the location permission text land in `Info.plist`. That is the same step EAS runs first on its build machines. What has not been run here is the actual compile and signing, which needs Apple's toolchain.
+
 ## Building locally instead
 
 If you would rather see the native projects, or build on your own machine:
