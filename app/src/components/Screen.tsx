@@ -1,18 +1,17 @@
 /**
  * Every screen's outer frame: full-height, respects the notch and home
- * indicator, uses the palette background, and on web stays phone-width.
- *
- * `children` is React's name for "whatever JSX you put between the tags".
+ * indicator, paints the palette's ground, and on web stays phone-width.
  */
 import type { PropsWithChildren } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaxContentWidth, Spacing, usePalette } from '@/constants/theme';
+import { usePalette } from '@/components/ThemeProvider';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 
 export function Screen({ children }: PropsWithChildren) {
-  const palette = usePalette();
+  const p = usePalette();
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: palette.background }]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: p.ground }]}>
       <View style={styles.column}>{children}</View>
     </SafeAreaView>
   );
@@ -20,13 +19,14 @@ export function Screen({ children }: PropsWithChildren) {
 
 const styles = StyleSheet.create({
   safe: {
-    flex: 1, // "take all available height"; the flexbox model is the same as CSS
+    flex: 1,
     alignItems: 'center',
   },
   column: {
     flex: 1,
     width: '100%',
     maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: 20,
+    paddingTop: Spacing.sm,
   },
 });

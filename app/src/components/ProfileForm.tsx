@@ -1,11 +1,11 @@
 /**
- * The partner questionnaire. Used by both onboarding (empty) and the profile
- * screen (pre-filled). Three fields on purpose; simplicity is the feature.
+ * The partner questionnaire on an index card. Used by onboarding (empty) and
+ * the profile screen (pre-filled). Three fields on purpose.
  *
  * Form state is plain `useState`. For a three-field form a form library would
  * be more code than it saves.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -17,8 +17,10 @@ import {
   View,
 } from 'react-native';
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { InterestChips } from '@/components/InterestChips';
-import { Radius, Spacing, usePalette } from '@/constants/theme';
+import { usePalette } from '@/components/ThemeProvider';
+import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { api, describeError, Interest, ProfileInput } from '@/lib/api';
 
 interface ProfileFormProps {
@@ -26,12 +28,14 @@ interface ProfileFormProps {
   submitLabel: string;
   /** Called with the cleaned-up values. Throw to show an error; resolve to finish. */
   onSubmit: (values: ProfileInput) => Promise<void>;
-  /** Optional extra content under the submit button (links, secondary actions). */
-  footer?: React.ReactNode;
+  /** Rendered above the card, inside the scroll area (titles, the theme picker). */
+  header?: ReactNode;
+  /** Rendered under the submit button. */
+  footer?: ReactNode;
 }
 
-export function ProfileForm({ initial, submitLabel, onSubmit, footer }: ProfileFormProps) {
-  const palette = usePalette();
+export function ProfileForm({ initial, submitLabel, onSubmit, header, footer }: ProfileFormProps) {
+  const p = usePalette();
 
   const [name, setName] = useState(initial?.name ?? '');
   const [interests, setInterests] = useState<string[]>(initial?.interests ?? []);
@@ -42,8 +46,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit, footer }: ProfileF
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // useEffect runs after render. An empty dependency array means "once, on mount",
-  // which is where data loading goes. Spring analogy: @PostConstruct.
+  // Runs once after the first render: load the chips. Spring analogy: @PostConstruct.
   useEffect(() => {
     let cancelled = false;
     api
@@ -54,7 +57,6 @@ export function ProfileForm({ initial, submitLabel, onSubmit, footer }: ProfileF
       .catch((err) => {
         if (!cancelled) setLoadError(describeError(err));
       });
-    // The cleanup function runs if the component unmounts before the fetch finishes.
     return () => {
       cancelled = true;
     };
@@ -66,11 +68,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit, footer }: ProfileF
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await onSubmit({
-        name: name.trim(),
-        interests,
-        currentFocus: currentFocus.trim() || undefined,
-      });
+      await onSubmit({ name: name.trim(), interests, currentFocus: currentFocus.trim() || undefined });
     } catch (err) {
       setSubmitError(describeError(err));
     } finally {
@@ -78,55 +76,56 @@ export function ProfileForm({ initial, submitLabel, onSubmit, footer }: ProfileF
     }
   };
 
-  const inputStyle = [
-    styles.input,
-    { color: palette.text, borderColor: palette.border, backgroundColor: palette.card },
-  ];
+  const inputStyle = [styles.input, { color: p.ink, borderColor: p.ink, backgroundColor: p.card }];
 
   return (
-    // On iOS the keyboard covers the bottom of the screen; this view shrinks to make room.
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.label, { color: palette.text }]}>What do you call them?</Text>
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder="Sam"
-          placeholderTextColor={palette.muted}
-          autoCapitalize="words"
-          autoCorrect={false}
-          maxLength={60}
-          style={inputStyle}
-          accessibilityLabel="Their name"
-        />
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        {header}
 
-        <Text style={[styles.label, { color: palette.text }]}>What are they into?</Text>
-        {options ? (
-          <InterestChips interests={options} selected={interests} onChange={setInterests} />
-        ) : loadError ? (
-          <Text style={{ color: palette.danger }}>{loadError}</Text>
-        ) : (
-          <ActivityIndicator color={palette.accent} />
-        )}
+        <Card contentStyle={styles.card}>
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: p.ink }]}>Name</Text>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Sam"
+              placeholderTextColor={p.muted}
+              autoCapitalize="words"
+              autoCorrect={false}
+              maxLength={60}
+              style={inputStyle}
+              accessibilityLabel="Their name"
+            />
+          </View>
 
-        <Text style={[styles.label, { color: palette.text }]}>
-          What&apos;s going on in their world lately?
-        </Text>
-        <TextInput
-          value={currentFocus}
-          onChangeText={setCurrentFocus}
-          placeholder="Big project at work, training for a 10k, the kitchen remodel..."
-          placeholderTextColor={palette.muted}
-          multiline
-          maxLength={500}
-          style={[...inputStyle, styles.multiline]}
-          accessibilityLabel="What is going on in their world lately"
-        />
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: p.ink }]}>Into</Text>
+            {options ? (
+              <InterestChips interests={options} selected={interests} onChange={setInterests} />
+            ) : loadError ? (
+              <Text style={[styles.error, { color: p.danger === '#FFE1DB' ? p.ink : p.danger }]}>{loadError}</Text>
+            ) : (
+              <ActivityIndicator color={p.ink} />
+            )}
+          </View>
 
-        {submitError && <Text style={{ color: palette.danger }}>{submitError}</Text>}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: p.ink }]}>Lately</Text>
+            <TextInput
+              value={currentFocus}
+              onChangeText={setCurrentFocus}
+              placeholder="What's going on in their world right now?"
+              placeholderTextColor={p.muted}
+              multiline
+              maxLength={500}
+              style={[...inputStyle, styles.multiline]}
+              accessibilityLabel="What is going on in their world lately"
+            />
+          </View>
+        </Card>
+
+        {submitError && <Text style={[styles.error, { color: p.danger }]}>{submitError}</Text>}
 
         <View style={styles.actions}>
           <Button title={submitLabel} onPress={submit} disabled={!canSubmit} busy={submitting} />
@@ -140,27 +139,42 @@ export function ProfileForm({ initial, submitLabel, onSubmit, footer }: ProfileF
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: {
+    gap: Spacing.md + 2,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xl,
+    // Leave room on the right for the card's hard shadow.
+    paddingRight: 6,
+  },
+  card: {
     gap: Spacing.md,
-    paddingVertical: Spacing.lg,
+    padding: Spacing.lg - 4,
+  },
+  field: {
+    gap: 6,
   },
   label: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: Spacing.sm,
+    fontFamily: Fonts.bold,
+    fontSize: 15,
   },
   input: {
+    fontFamily: Fonts.medium,
     fontSize: 17,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 14,
-    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 2,
     borderRadius: Radius.md,
   },
   multiline: {
-    minHeight: 100,
+    minHeight: 88,
+    lineHeight: 22,
     textAlignVertical: 'top', // Android: start typing at the top, not vertically centred
+  },
+  error: {
+    fontFamily: Fonts.bold,
+    fontSize: 14,
   },
   actions: {
     gap: Spacing.md,
-    marginTop: Spacing.lg,
+    marginTop: Spacing.sm,
   },
 });

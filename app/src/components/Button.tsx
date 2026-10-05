@@ -1,19 +1,30 @@
 /**
- * The app's one button. Three looks: primary (filled), secondary (outlined),
- * ghost (text only). Big touch targets on purpose; this is used with thumbs.
+ * The app's buttons.
+ *
+ *  primary  ink-filled pill with an accent hard shadow ("Next card", "Deal me in")
+ *  outline  bordered pill that sits on the ground ("Nope", "Good one")
+ *  link     plain underlined text ("Profile", "Back")
+ *
+ * `icon` renders to the left of the title. `selected` (outline only) fills the
+ * pill with the accent so a chosen thumb stays visibly chosen.
  */
-import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
-import { Radius, Spacing, usePalette } from '@/constants/theme';
+import type { ReactNode } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { HardShadow } from '@/components/HardShadow';
+import { usePalette } from '@/components/ThemeProvider';
+import { Fonts, Radius, Spacing } from '@/constants/theme';
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'outline' | 'link';
+  icon?: ReactNode;
+  selected?: boolean;
   disabled?: boolean;
   /** Shows a spinner instead of the title and disables presses. */
   busy?: boolean;
   style?: ViewStyle;
-  /** Accessibility label for screen readers, when the title alone is not descriptive. */
+  /** For screen readers, when the title alone is not descriptive. */
   accessibilityLabel?: string;
 }
 
@@ -21,57 +32,127 @@ export function Button({
   title,
   onPress,
   variant = 'primary',
+  icon,
+  selected = false,
   disabled = false,
   busy = false,
   style,
   accessibilityLabel,
 }: ButtonProps) {
-  const palette = usePalette();
+  const p = usePalette();
   const inactive = disabled || busy;
 
-  const container: ViewStyle =
-    variant === 'primary'
-      ? { backgroundColor: palette.accent }
-      : variant === 'secondary'
-        ? { borderWidth: 2, borderColor: palette.accent }
-        : {};
-  const textColor = variant === 'primary' ? palette.onAccent : palette.accent;
+  if (variant === 'link') {
+    return (
+      <Pressable
+        onPress={onPress}
+        disabled={inactive}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? title}
+        style={({ pressed }) => [styles.link, style, inactive && styles.inactive, pressed && styles.pressed]}
+      >
+        <Text style={[styles.linkText, { color: p.onGround }]}>{title}</Text>
+      </Pressable>
+    );
+  }
 
+  if (variant === 'outline') {
+    const bg = selected ? p.accent : p.outlineBg;
+    const fg = selected ? p.onAccent : p.outlineText;
+    const border = selected ? p.accent : p.outlineBorder;
+    return (
+      <Pressable
+        onPress={onPress}
+        disabled={inactive}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? title}
+        accessibilityState={{ selected, disabled: inactive }}
+        style={({ pressed }) => [
+          styles.pill,
+          styles.outline,
+          { backgroundColor: bg, borderColor: border },
+          style,
+          inactive && styles.inactive,
+          pressed && styles.pressed,
+        ]}
+      >
+        {busy ? (
+          <ActivityIndicator color={fg} />
+        ) : (
+          <View style={styles.row}>
+            {icon}
+            <Text style={[styles.outlineText, { color: fg }]}>{title}</Text>
+          </View>
+        )}
+      </Pressable>
+    );
+  }
+
+  // primary
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={inactive}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? title}
-      // A function style lets us react to the press state (like :active in CSS).
-      style={({ pressed }) => [
-        styles.base,
-        container,
-        style,
-        inactive && styles.inactive,
-        pressed && styles.pressed,
-      ]}
-    >
-      {busy ? (
-        <ActivityIndicator color={textColor} />
-      ) : (
-        <Text style={[styles.text, { color: textColor }]}>{title}</Text>
-      )}
-    </Pressable>
+    <HardShadow color={p.accent} offset={4} radius={Radius.pill} style={style}>
+      <Pressable
+        onPress={onPress}
+        disabled={inactive}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? title}
+        accessibilityState={{ disabled: inactive }}
+        style={({ pressed }) => [
+          styles.pill,
+          styles.primary,
+          { backgroundColor: p.ink, borderColor: p.ink },
+          inactive && styles.inactive,
+          pressed && styles.pressed,
+        ]}
+      >
+        {busy ? (
+          <ActivityIndicator color={p.onInk} />
+        ) : (
+          <View style={styles.row}>
+            {icon}
+            <Text style={[styles.primaryText, { color: p.onInk }]}>{title}</Text>
+          </View>
+        )}
+      </Pressable>
+    </HardShadow>
   );
 }
 
 const styles = StyleSheet.create({
-  base: {
-    minHeight: 52,
-    paddingHorizontal: Spacing.lg,
+  pill: {
     borderRadius: Radius.pill,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: Spacing.lg,
   },
-  text: {
-    fontSize: 17,
-    fontWeight: '600',
+  primary: {
+    minHeight: 60,
+  },
+  outline: {
+    minHeight: 56,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  primaryText: {
+    fontFamily: Fonts.extraBold,
+    fontSize: 18,
+  },
+  outlineText: {
+    fontFamily: Fonts.bold,
+    fontSize: 16,
+  },
+  link: {
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  linkText: {
+    fontFamily: Fonts.bold,
+    fontSize: 15,
+    textDecorationLine: 'underline',
   },
   inactive: {
     opacity: 0.5,

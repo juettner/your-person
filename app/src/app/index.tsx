@@ -1,7 +1,7 @@
 /**
- * Today: the heart of the app. One question fills the screen. Thumbs up or
- * down to teach the app what works for you. "Next" moves on. After the batch,
- * ask for more.
+ * Today: the heart of the app. One question on a card. "Nope" hides it and
+ * moves on, "Good one" keeps it coming back, "Next card" advances. After the
+ * batch, deal three more.
  *
  * State lives in this component. For an app this size that is the right
  * amount of architecture; a global store (Redux, Zustand) would be overkill.
@@ -10,9 +10,12 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { ThumbsDown, ThumbsUp } from '@/components/Icons';
 import { PromptCard } from '@/components/PromptCard';
 import { Screen } from '@/components/Screen';
-import { Spacing, usePalette } from '@/constants/theme';
+import { usePalette } from '@/components/ThemeProvider';
+import { Fonts, Spacing } from '@/constants/theme';
 import { api, describeError, Prompt, Score } from '@/lib/api';
 import { getProfileId } from '@/lib/profile-store';
 
@@ -21,7 +24,7 @@ const BATCH_SIZE = 3;
 type Status = 'loading' | 'ready' | 'error';
 
 export default function TodayScreen() {
-  const palette = usePalette();
+  const p = usePalette();
 
   const [status, setStatus] = useState<Status>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -66,8 +69,7 @@ export default function TodayScreen() {
         if (prompts.length === 0) {
           await loadBatch(id);
         } else {
-          // Just refresh the name in case it changed.
-          api.getProfile(id).then((p) => !cancelled && setAskName(p.name)).catch(() => {});
+          api.getProfile(id).then((prof) => !cancelled && setAskName(prof.name)).catch(() => {});
         }
       })();
       return () => {
@@ -87,7 +89,7 @@ export default function TodayScreen() {
     setRatings((r) => ({ ...r, [current.id]: score }));
     try {
       await api.rate(profileId, current.id, score);
-      // A thumbs-down means "not this one"; move along without another tap.
+      // "Nope" means "not this one"; move along without another tap.
       if (score === -1) setIndex((i) => i + 1);
     } catch (err) {
       setError(describeError(err));
@@ -98,88 +100,83 @@ export default function TodayScreen() {
 
   const next = () => setIndex((i) => i + 1);
 
+  const thumbColor = (score: Score) => (ratings[current?.id ?? ''] === score ? p.onAccent : p.outlineText);
+
   return (
     <Screen>
       {/* Top row: who we're asking, and the way to the profile screen. */}
       <View style={styles.topRow}>
-        <Text style={[styles.askName, { color: palette.muted }]}>
-          {askName ? `Ask ${askName}` : ' '}
-        </Text>
-        <Button
-          title="Profile"
-          variant="ghost"
-          onPress={() => router.push('/profile')}
-          style={styles.profileButton}
-        />
+        <Text style={[styles.askName, { color: p.onGround }]}>{askName ? `Ask ${askName}` : ' '}</Text>
+        <Button title="Profile" variant="link" onPress={() => router.push('/profile')} />
       </View>
 
       {status === 'loading' && (
         <View style={styles.center}>
-          <ActivityIndicator color={palette.accent} size="large" />
+          <ActivityIndicator color={p.onGround} size="large" />
         </View>
       )}
 
       {status === 'error' && (
-        <View style={[styles.center, { gap: Spacing.md }]}>
-          <Text style={[styles.errorText, { color: palette.danger }]}>{error}</Text>
-          <Button title="Try again" onPress={() => profileId && loadBatch(profileId)} />
+        <View style={styles.center}>
+          <Card contentStyle={styles.messageCard}>
+            <Text style={[styles.messageTitle, { color: p.ink }]}>Hmm.</Text>
+            <Text style={[styles.messageText, { color: p.muted }]}>{error}</Text>
+          </Card>
+          <Button title="Try again" onPress={() => profileId && loadBatch(profileId)} style={styles.messageButton} />
         </View>
       )}
 
       {status === 'ready' && prompts.length === 0 && (
-        <View style={[styles.center, { gap: Spacing.md }]}>
-          <Text style={[styles.doneTitle, { color: palette.text }]}>No questions left</Text>
-          <Text style={[styles.doneText, { color: palette.muted }]}>
-            Add a few more interests to the profile to unlock more.
-          </Text>
-          <Button title="Edit profile" onPress={() => router.push('/profile')} />
+        <View style={styles.center}>
+          <Card contentStyle={styles.messageCard}>
+            <Text style={[styles.messageTitle, { color: p.ink }]}>No cards left</Text>
+            <Text style={[styles.messageText, { color: p.muted }]}>Add a few more interests to the profile to unlock more.</Text>
+          </Card>
+          <Button title="Edit profile" onPress={() => router.push('/profile')} style={styles.messageButton} />
         </View>
       )}
 
       {status === 'ready' && current && (
         <>
-          <PromptCard prompt={current} />
-
-          <Text style={[styles.progress, { color: palette.muted }]}>
-            {index + 1} of {prompts.length}
-          </Text>
-
-          {/* Thumbs: big targets, side by side. */}
-          <View style={styles.thumbs}>
-            <Button
-              title="👎"
-              variant={ratings[current.id] === -1 ? 'primary' : 'secondary'}
-              onPress={() => rate(-1)}
-              disabled={rating}
-              style={styles.thumb}
-              accessibilityLabel="Hide this question"
-            />
-            <Button
-              title="👍"
-              variant={ratings[current.id] === 1 ? 'primary' : 'secondary'}
-              onPress={() => rate(1)}
-              disabled={rating}
-              style={styles.thumb}
-              accessibilityLabel="Good question"
-            />
+          <View style={styles.cardArea}>
+            <PromptCard prompt={current} index={index} total={prompts.length} />
           </View>
-          <Button
-            title={index + 1 < prompts.length ? 'Next' : 'Done'}
-            onPress={next}
-            style={styles.next}
-          />
+
+          <View style={styles.actions}>
+            <View style={styles.thumbs}>
+              <Button
+                title="Nope"
+                variant="outline"
+                icon={<ThumbsDown color={thumbColor(-1)} />}
+                selected={ratings[current.id] === -1}
+                onPress={() => rate(-1)}
+                disabled={rating}
+                style={styles.thumb}
+                accessibilityLabel="Hide this question"
+              />
+              <Button
+                title="Good one"
+                variant="outline"
+                icon={<ThumbsUp color={thumbColor(1)} />}
+                selected={ratings[current.id] === 1}
+                onPress={() => rate(1)}
+                disabled={rating}
+                style={styles.thumb}
+                accessibilityLabel="Good question"
+              />
+            </View>
+            <Button title={index + 1 < prompts.length ? 'Next card' : 'Done'} onPress={next} />
+          </View>
         </>
       )}
 
       {finished && prompts.length > 0 && (
-        <View style={[styles.center, { gap: Spacing.md }]}>
-          <Text style={[styles.doneTitle, { color: palette.text }]}>That&apos;s {prompts.length}.</Text>
-          <Text style={[styles.doneText, { color: palette.muted }]}>Go talk to {askName}.</Text>
-          <Button
-            title={`${prompts.length} more`}
-            variant="secondary"
-            onPress={() => profileId && loadBatch(profileId)}
-          />
+        <View style={styles.center}>
+          <Card contentStyle={styles.messageCard}>
+            <Text style={[styles.messageTitle, { color: p.ink }]}>That&apos;s {prompts.length}.</Text>
+            <Text style={[styles.messageText, { color: p.muted }]}>Go talk to {askName}.</Text>
+          </Card>
+          <Button title={`${prompts.length} more`} onPress={() => profileId && loadBatch(profileId)} style={styles.messageButton} />
         </View>
       )}
     </Screen>
@@ -194,46 +191,50 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   askName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: Fonts.extraBold,
+    fontSize: 20,
+    letterSpacing: -0.4,
   },
-  profileButton: {
-    minHeight: 40,
-    paddingHorizontal: Spacing.sm,
+  cardArea: {
+    flex: 1,
+    justifyContent: 'center',
+    // Leave room for the hard shadow and the tilt.
+    paddingRight: 6,
+    paddingBottom: 6,
   },
   center: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.md,
+    gap: Spacing.lg,
+    paddingRight: 6,
   },
-  errorText: {
-    fontSize: 16,
-    textAlign: 'center',
+  messageCard: {
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xl,
   },
-  progress: {
-    textAlign: 'center',
-    fontSize: 14,
-    marginBottom: Spacing.md,
+  messageTitle: {
+    fontFamily: Fonts.extraBold,
+    fontSize: 32,
+    letterSpacing: -0.8,
+  },
+  messageText: {
+    fontFamily: Fonts.medium,
+    fontSize: 18,
+    lineHeight: 26,
+  },
+  messageButton: {
+    marginBottom: Spacing.xl,
+  },
+  actions: {
+    gap: 14,
+    paddingBottom: Spacing.lg,
+    paddingRight: 4,
   },
   thumbs: {
     flexDirection: 'row',
-    gap: Spacing.md,
-    marginBottom: Spacing.md,
+    gap: 14,
   },
   thumb: {
     flex: 1,
-  },
-  next: {
-    marginBottom: Spacing.lg,
-  },
-  doneTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  doneText: {
-    fontSize: 18,
-    textAlign: 'center',
   },
 });
