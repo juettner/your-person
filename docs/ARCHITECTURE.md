@@ -151,6 +151,10 @@ profile + brief + liked/hidden history  ──►  generate: Claude, structured 
 
 **What "deeper" looks like from here.** The engine already has every lever the roadmap needs: give the research step more to look up (a venue's calendar, the team's schedule), feed thumbs history back as examples, or let the model also propose new follow-up questions for the taxonomy. None of that changes the port.
 
+## Card kinds and modes
+
+Every bank entry has a `kind`: `question` (the default), `appreciation`, `bid`, `dream`, or `stress`. Day mode deals questions and allows at most one appreciation, bid, or dream card per batch, each at a reduced weight so they stay occasional. Evening mode deals only stress and appreciation cards. Dates within three weeks become synthesized questions whose id is the date's id, so they can be rated and hidden like any other. Memories are stored on the profile and the last fifteen go into the AI prompt as "things they have said".
+
 ## The question selection algorithm
 
 Lives in `api/src/questions/question-selector.service.ts`. Pure function of the profile, with an injectable random source so tests are deterministic.
@@ -174,7 +178,10 @@ All routes are under `/api`. JSON in, JSON out. No auth in the MVP; the profile 
 | POST | `/api/profiles` | `{ name, interests[], interestDetails?, currentFocus?, notes? }` | profile |
 | GET | `/api/profiles/:id` | | profile |
 | PATCH | `/api/profiles/:id` | any subset of the create body | profile |
-| GET | `/api/profiles/:id/questions?count=3` | | `{ askName, questions: [{ id, text, interest, source: "curated" \| "ai" }] }` |
+| GET | `/api/profiles/:id/questions?count=3&mode=day\|evening` | | `{ askName, mode, questions: [{ id, text, interest, source, kind }], nudges: { reviewDetails, upcomingDates } }` |
+| GET | `/api/profiles/:id/memories` | | `[{ id, questionId?, questionText?, text, createdAt }]` newest first |
+| POST | `/api/profiles/:id/memories` | `{ text, questionId? }` | memory |
+| DELETE | `/api/profiles/:id/memories/:memoryId` | | 204 |
 | POST | `/api/profiles/:id/questions/:questionId/rating` | `{ score: 1 \| -1 }` | `{ questionId, score, hidden }` |
 | POST | `/api/profiles/:id/questions/generate` | | `{ enabled, generated }` |
 

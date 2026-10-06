@@ -36,6 +36,20 @@ The first card asks for a city, with a "Use my location" shortcut that fills it 
 
 With an API key configured, the backend asks Claude to write a deck of ten questions from the whole profile: name, city, every follow-up answer, what's going on lately, and which questions the asker liked or hid. Optionally it first web-searches for timely local facts (the team's next game, a festival this month). Those questions appear in the normal rotation marked "Written for Sam", carry the most weight, and are rated and hidden like any other. The deck refreshes itself when it goes stale or the profile changes. Without a key, nothing changes: the curated bank carries the app.
 
+### Borrowed from the Gottmans
+
+Four ideas from John and Julie Gottman's research shape the deck, written as our own cards, never their text:
+
+- **Love maps.** The whole questionnaire is one: knowing your person's inner world in detail. The "still true?" nudge after a month without changes keeps it current.
+- **Say it out loud.** Appreciation cards are not questions. "Tell them one thing they did this week that made your life easier." Fondness and admiration, voiced.
+- **Turning toward bids.** "Today" cards are one tiny thing to do: "when they point something out, stop and look." The behavior the questions are for.
+- **The stress-reducing conversation.** Evening mode deals cards for the end of the day: listen, take their side, don't fix. It is the one place the app asks about a hard day, and it never asks about the relationship itself.
+- **Rituals and dreams.** An "Our rituals" interest protects the daily, weekly, and yearly things that are yours. Rare "go deeper" cards ask what things mean, not just what they are.
+
+### The other half: remembering
+
+After any question, one line: "What did Sam say?" Those memories live on their own screen and are the best material the AI engine gets. "Not now" skips a card without judging it. Dates that matter, a birthday or an anniversary, produce a card when they're three weeks out. A weekly nudge is available and off by default.
+
 ### Why go deep on interests
 
 "They like sports" produces a generic question. "They follow the Vikings" produces "How are the Vikings looking right now, honestly?" The follow-ups exist to turn the question bank from a list of pleasantries into something that sounds like it knows your person. Each interest has three to six follow-ups, and the question bank has templates that use those answers (`docs/ARCHITECTURE.md`, "Deep interests").

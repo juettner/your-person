@@ -43,18 +43,30 @@ export interface ProfileLocation {
   country?: string;
 }
 
+/** A birthday, an anniversary, the recital. Month and day; it recurs yearly. */
+export interface ImportantDate {
+  id?: string;
+  label: string;
+  month: number;
+  day: number;
+}
+
 export interface ProfileInput {
   name: string;
   interests: string[];
   interestDetails?: InterestDetails;
   /** `null` clears a previously saved location. */
   location?: ProfileLocation | null;
+  dates?: ImportantDate[];
   currentFocus?: string;
   notes?: string;
 }
 
 export interface Profile extends ProfileInput {
   id: string;
+  dates: ImportantDate[];
+  memoryCount: number;
+  detailsUpdatedAt: string;
   createdAt: string;
   updatedAt: string;
   hiddenCount: number;
@@ -63,6 +75,17 @@ export interface Profile extends ProfileInput {
   aiGeneratedAt: string | null;
 }
 
+/**
+ * What kind of card this is:
+ *  question      ask your person something
+ *  appreciation  say something out loud to them
+ *  bid           one tiny thing to do today
+ *  dream         a rarer, deeper question
+ *  stress        evening mode: listen, take their side, don't fix
+ */
+export type PromptKind = 'question' | 'appreciation' | 'bid' | 'dream' | 'stress';
+export type PromptMode = 'day' | 'evening';
+
 export interface Prompt {
   id: string;
   text: string;
@@ -70,6 +93,16 @@ export interface Prompt {
   interest: string | null;
   /** Hand-written bank, or written by the AI engine for this profile. */
   source: 'curated' | 'ai';
+  kind: PromptKind;
+}
+
+/** Something your person said, written down after a question. */
+export interface Memory {
+  id: string;
+  questionId?: string;
+  questionText?: string;
+  text: string;
+  createdAt: string;
 }
 
 export interface GenerateResponse {
@@ -79,7 +112,12 @@ export interface GenerateResponse {
 
 export interface PromptsResponse {
   askName: string;
+  mode: PromptMode;
   questions: Prompt[];
+  nudges: {
+    reviewDetails: boolean;
+    upcomingDates: { label: string; month: number; day: number; daysAway: number }[];
+  };
 }
 
 export type Score = 1 | -1;
@@ -136,6 +174,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(res.status, message);
   }
 
+  if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
 
@@ -153,8 +192,19 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  getPrompts: (id: string, count = 3) =>
-    request<PromptsResponse>(`/profiles/${encodeURIComponent(id)}/questions?count=${count}`),
+  getPrompts: (id: string, count = 3, mode: PromptMode = 'day') =>
+    request<PromptsResponse>(`/profiles/${encodeURIComponent(id)}/questions?count=${count}&mode=${mode}`),
+
+  listMemories: (id: string) => request<Memory[]>(`/profiles/${encodeURIComponent(id)}/memories`),
+
+  addMemory: (id: string, text: string, questionId?: string) =>
+    request<Memory>(`/profiles/${encodeURIComponent(id)}/memories`, {
+      method: 'POST',
+      body: JSON.stringify({ text, questionId }),
+    }),
+
+  deleteMemory: (id: string, memoryId: string) =>
+    request<void>(`/profiles/${encodeURIComponent(id)}/memories/${encodeURIComponent(memoryId)}`, { method: 'DELETE' }),
 
   rate: (id: string, questionId: string, score: Score) =>
     request<RatingResponse>(

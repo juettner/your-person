@@ -44,6 +44,12 @@
         {
           "locationWhenInUsePermission": "Your Person uses your location only to fill in the city your person lives in. Only the city name is saved."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#CFE3F7"
+        }
       ]
     ],
     "experiments": {

@@ -31,6 +31,9 @@ import { Fonts, Radius, Spacing } from '@/constants/theme';
 import { api, describeError, Interest, InterestDetails, ProfileInput, ProfileLocation } from '@/lib/api';
 import { detectLocation } from '@/lib/location';
 
+/** How many follow-ups per interest the onboarding cards show. */
+const ONBOARDING_FOLLOW_UPS = 2;
+
 interface ProfileFormProps {
   initial?: ProfileInput;
   /** Label on the final card's button ("Deal me in", "Save"). */
@@ -45,9 +48,11 @@ interface ProfileFormProps {
   header?: ReactNode;
   /** Rendered under the buttons on the first card only. */
   footer?: ReactNode;
+  /** Rendered between the first card and its buttons (dates, reminders). */
+  afterCard?: ReactNode;
 }
 
-export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, header, footer }: ProfileFormProps) {
+export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, header, footer, afterCard }: ProfileFormProps) {
   const p = usePalette();
 
   const [name, setName] = useState(initial?.name ?? '');
@@ -153,10 +158,16 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
         {current ? (
           <Card contentStyle={styles.card}>
             <FollowUpFields
-              interest={current}
+              // Keep onboarding short: the first two follow-ups now, the rest from the profile screen.
+              interest={mode === 'create' ? { ...current, followUps: current.followUps.slice(0, ONBOARDING_FOLLOW_UPS) } : current}
               answers={details[current.id] ?? {}}
               onChange={(answers) => setDetails((d) => ({ ...d, [current.id]: answers }))}
             />
+            {mode === 'create' && current.followUps.length > ONBOARDING_FOLLOW_UPS && (
+              <Text style={[styles.moreLater, { color: p.muted }]}>
+                {current.followUps.length - ONBOARDING_FOLLOW_UPS} more on the profile screen, whenever.
+              </Text>
+            )}
           </Card>
         ) : (
           <Card contentStyle={styles.card}>
@@ -231,6 +242,8 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
             </View>
           </Card>
         )}
+
+        {step === 0 && afterCard}
 
         {submitError && <Text style={[styles.error, { color: p.danger }]}>{submitError}</Text>}
 
@@ -317,6 +330,10 @@ const styles = StyleSheet.create({
   error: {
     fontFamily: Fonts.bold,
     fontSize: 14,
+  },
+  moreLater: {
+    fontFamily: Fonts.medium,
+    fontSize: 13,
   },
   inlineRow: {
     flexDirection: 'row',
