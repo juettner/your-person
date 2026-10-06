@@ -214,6 +214,71 @@ export const QUESTION_BANK: readonly Question[] = [
   { id: 'fin04', text: 'What would you do with a surprise thousand dollars, no strings?', tags: ['finance'] },
   { id: 'art04', text: 'When you make {art.medium|lower}, what are you thinking about?', tags: ['art'], requires: ['art.medium'] },
   { id: 'out04', text: 'If we did {outdoors.activity|lower} next weekend, where would you want to go?', tags: ['outdoors'], requires: ['outdoors.activity'] },
+
+  // --- more general ---
+  { id: 'g25', text: "What's a compliment you got recently that you're still thinking about?", tags: [G] },
+  { id: 'g26', text: 'If we had no plans this weekend, what would you want the first morning to look like?', tags: [G] },
+  { id: 'g27', text: "What's something you want to get better at, just for you?", tags: [G] },
+  { id: 'g28', text: 'What did you need today that you did not get?', tags: [G] },
+  { id: 'g29', text: "What's one thing about your parents you understand better now?", tags: [G] },
+  { id: 'g30', text: "What's a sound or smell that takes you right back somewhere?", tags: [G] },
+  { id: 'g31', text: "When's the last time you laughed so hard it hurt?", tags: [G] },
+  { id: 'g32', text: "What's a boring errand you'd happily do together?", tags: [G] },
+  { id: 'g33', text: 'What would you tell yourself at 25?', tags: [G] },
+  { id: 'g34', text: "What's a fight we should have had but never did?", tags: [G] },
+  { id: 'g35', text: 'What do you want more of in the next three months, and less of?', tags: [G] },
+  { id: 'g36', text: "What's something you're quietly looking forward to this winter?", tags: [G] },
+
+  // --- new follow-up templates on existing interests ---
+  { id: 'cook09', text: 'Tonight: {cooking.eatOut|lower}, or should I surprise you?', tags: ['cooking'], requires: ['cooking.eatOut'] },
+  { id: 'run04', text: "Is running {running.company|lower} still what you need, or do you want a change?", tags: ['running'], requires: ['running.company'] },
+  { id: 'read07', text: "Would you want a {reading.format|lower} version of something I'm reading, so we could talk about it?", tags: ['reading'], requires: ['reading.format'] },
+  { id: 'mov04', text: 'Has {movies.actor} made anything lately we should watch?', tags: ['movies'], requires: ['movies.actor'] },
+  { id: 'mov05', text: 'Want to make a {movies.where|lower} night of it this week?', tags: ['movies'], requires: ['movies.where'] },
+  { id: 'tv04', text: 'Rough week? Should we put on {tv.comfort} and not talk about it?', tags: ['tv'], requires: ['tv.comfort'] },
+  { id: 'trav06', text: 'What would it take to actually do {travel.bucket}? Not someday. A year?', tags: ['travel'], requires: ['travel.bucket'] },
+  { id: 'out05', text: "It's almost {outdoors.season|lower}. What's the first thing you want to do outside?", tags: ['outdoors'], requires: ['outdoors.season'] },
+  { id: 'gard04', text: "How's {gardening.pride|lower} doing? Still the favorite?", tags: ['gardening'], requires: ['gardening.pride'] },
+  { id: 'kid06', text: "How's {kids.school|lower} going? Anything I should know before I hear it from the kids?", tags: ['kids'], requires: ['kids.school'] },
+  { id: 'kid07', text: "{kids.hardest} are the hard part. What would make them easier this week?", tags: ['kids'], requires: ['kids.hardest'] },
+  { id: 'fam06', text: 'Is {family.tradition|lower} happening this year? How do you feel about it?', tags: ['family'], requires: ['family.tradition'] },
+  { id: 'faith05', text: 'What do you want {faith.season} to feel like for us this year?', tags: ['faith'], requires: ['faith.season'] },
+  { id: 'fin05', text: 'Is {finance.worry|lower} still nagging at you? Want to look at it together?', tags: ['finance'], requires: ['finance.worry'] },
+  { id: 'game05', text: 'What is it about {gaming.alltime} that nothing since has matched?', tags: ['gaming'], requires: ['gaming.alltime'] },
+  { id: 'pet05', text: "Any update on {pets.vet|lower} with {pets.name}?", tags: ['pets'], requires: ['pets.vet', 'pets.name'] },
+  { id: 'mus08', text: 'What are you listening to on the {music.listen|lower} these days?', tags: ['music'], requires: ['music.listen'] },
+  { id: 'work09', text: 'If {work.dream|lower} happened next year, what would change for us?', tags: ['work'], requires: ['work.dream'] },
+
+  // --- podcasts & youtube ---
+  { id: 'pod01', text: 'What did {podcasts.show} cover this week that you want to tell me about?', tags: ['podcasts'], requires: ['podcasts.show'] },
+  { id: 'pod02', text: "What's something you learned from a podcast that you've been dying to bring up?", tags: ['podcasts'] },
+  { id: 'pod03', text: 'Is there an episode you want me to listen to so we can argue about it?', tags: ['podcasts'] },
+  { id: 'pod04', text: "What's a {podcasts.kind|lower} show you'd recommend to someone who hates {podcasts.kind|lower}?", tags: ['podcasts'], requires: ['podcasts.kind'] },
+
+  // --- coffee & drinks ---
+  { id: 'drk01', text: 'Should I grab you {drinks.order|lower} on the way home?', tags: ['drinks'], requires: ['drinks.order'] },
+  { id: 'drk02', text: 'When did we last go to {drinks.spot}? Want to go this weekend?', tags: ['drinks'], requires: ['drinks.spot'] },
+  { id: 'drk03', text: 'Is {drinks.ritual|lower} still sacred, or has it slipped?', tags: ['drinks'], requires: ['drinks.ritual'] },
+  { id: 'drk04', text: "What's a place you'd want to sit for an hour with nothing to do?", tags: ['drinks', 'local'] },
+
+  // --- style & self-care ---
+  { id: 'sty01', text: 'When did you last do something just for yourself?', tags: ['style', 'wellness'] },
+  { id: 'sty02', text: 'Should {style.wishlist|lower} finally happen? Birthday is coming.', tags: ['style'], requires: ['style.wishlist'] },
+  { id: 'sty03', text: "I love you in {style.signature|lower}. When did that become your thing?", tags: ['style'], requires: ['style.signature'] },
+  { id: 'sty04', text: 'Want me to book {style.care|lower} for you this month?', tags: ['style'], requires: ['style.care'] },
+
+  // --- causes & volunteering ---
+  { id: 'vol01', text: "What's going on with {volunteering.cause|lower} right now?", tags: ['volunteering'], requires: ['volunteering.cause'] },
+  { id: 'vol02', text: "Is there something at {volunteering.org} I could help with?", tags: ['volunteering'], requires: ['volunteering.org'] },
+  { id: 'vol03', text: "What's a cause you'd give a whole weekend to?", tags: ['volunteering'] },
+  { id: 'vol04', text: 'Who do you admire for how they show up for people?', tags: ['volunteering', G] },
+
+  // --- sleep & wellness ---
+  { id: 'wel01', text: 'How have you been sleeping, honestly?', tags: ['wellness'] },
+  { id: 'wel02', text: 'Is {wellness.stress|lower} still the big stress, or has something taken over?', tags: ['wellness'], requires: ['wellness.stress'] },
+  { id: 'wel03', text: 'You recharge with {wellness.recharge|lower}. When did you last get enough of it?', tags: ['wellness'], requires: ['wellness.recharge'] },
+  { id: 'wel04', text: 'What would a genuinely restful day look like for you right now?', tags: ['wellness', G] },
+  { id: 'wel05', text: "What's one thing I could take off your plate this week?", tags: ['wellness', G] },
 ];
 
 const byId = new Map(QUESTION_BANK.map((q) => [q.id, q]));

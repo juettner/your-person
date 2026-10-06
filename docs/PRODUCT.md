@@ -37,7 +37,7 @@ With an API key configured, the backend asks Claude to write a deck of ten quest
 
 ### Why go deep on interests
 
-"They like sports" produces a generic question. "They follow the Vikings" produces "How are the Vikings looking right now, honestly?" The follow-ups exist to turn the question bank from a list of pleasantries into something that sounds like it knows your person. Each interest has two or three follow-ups, and the question bank has templates that use those answers (`docs/ARCHITECTURE.md`, "Deep interests").
+"They like sports" produces a generic question. "They follow the Vikings" produces "How are the Vikings looking right now, honestly?" The follow-ups exist to turn the question bank from a list of pleasantries into something that sounds like it knows your person. Each interest has three to six follow-ups, and the question bank has templates that use those answers (`docs/ARCHITECTURE.md`, "Deep interests").
 
 ### Behaviour
 

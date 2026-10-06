@@ -47,6 +47,7 @@ export const INTERESTS: readonly Interest[] = [
       choice('mood', 'How is work treating them lately?', ['Loving it', "It's fine", 'Rough patch']),
       text('project', 'The big thing at work right now?', 'The migration, the Q4 pitch, hiring...'),
       text('colleague', 'A coworker they mention a lot?', 'Their manager Dana, the new hire...'),
+      choice('dream', 'Where would they like work to go?', ['Promotion', 'Same job, less of it', 'A new field', 'Their own thing', 'Retire early']),
     ],
   },
   {
@@ -58,6 +59,7 @@ export const INTERESTS: readonly Interest[] = [
       text('dish', "A dish they're proud of?", 'Their lasagna, Sunday pancakes...'),
       text('spot', 'Their favorite local restaurant?', 'Hai Hai, the taco truck on Lake...'),
       text('want', 'Something they want to learn to cook?', 'Fresh pasta, sourdough, a proper curry...'),
+      choice('eatOut', 'Eating out or cooking in?', ['Cooking in', 'Eating out', 'Takeout on the couch']),
     ],
   },
   {
@@ -75,6 +77,7 @@ export const INTERESTS: readonly Interest[] = [
     followUps: [
       choice('distance', 'Their kind of running?', ['5k', '10k', 'Half marathon', 'Marathon', 'Trails', 'Just for fun']),
       text('race', "A race they're eyeing?", 'Twin Cities Marathon, the Turkey Trot...'),
+      choice('company', 'Run alone or with people?', ['Alone, headphones in', 'Running club', 'With a friend', 'With you']),
     ],
   },
   {
@@ -84,6 +87,7 @@ export const INTERESTS: readonly Interest[] = [
       choice('genre', 'What do they read?', ['Fiction', 'Mystery & thrillers', 'Sci-fi & fantasy', 'Romance', 'History', 'Biography', 'Self-improvement', 'Business'], true),
       text('author', 'An author they love?', 'Octavia Butler, Michael Lewis...'),
       text('current', 'What are they reading right now?', 'The new Tana French...'),
+      choice('format', 'How do they read?', ['Paper', 'Kindle', 'Audiobooks', 'All of the above']),
     ],
   },
   {
@@ -92,6 +96,8 @@ export const INTERESTS: readonly Interest[] = [
     followUps: [
       choice('genre', 'Their go-to genres?', ['Comedy', 'Drama', 'Action', 'Horror', 'Sci-fi', 'Documentary', 'Romance', 'Animation'], true),
       text('favorite', 'A movie they can rewatch forever?', 'The Princess Bride, Heat...'),
+      choice('where', 'Theater or couch?', ['Theater, always', 'Couch', 'Depends on the movie']),
+      text('actor', 'An actor or director they follow?', 'Greta Gerwig, Denzel...'),
     ],
   },
   {
@@ -100,6 +106,7 @@ export const INTERESTS: readonly Interest[] = [
     followUps: [
       text('show', 'What are they watching right now?', 'Severance, The Bear...'),
       choice('style', 'How do they watch?', ['Binges a season', 'One episode a night', 'Background noise']),
+      text('comfort', 'Their comfort rewatch?', 'The Office, Great British Bake Off...'),
     ],
   },
   {
@@ -111,6 +118,7 @@ export const INTERESTS: readonly Interest[] = [
       choice('live', 'Live shows?', ['Loves a concert', 'Prefers headphones']),
       text('venue', 'A local venue they love?', 'First Avenue, the Dakota...'),
       text('song', 'A song that is theirs?', 'The one from the wedding, the road-trip song...'),
+      choice('listen', 'When do they listen most?', ['Commute', 'Cooking', 'Working', 'Falling asleep']),
     ],
   },
   {
@@ -120,6 +128,7 @@ export const INTERESTS: readonly Interest[] = [
       choice('platform', 'Where do they play?', ['PlayStation', 'Xbox', 'Switch', 'PC', 'Phone', 'Board games'], true),
       text('game', 'What are they playing right now?', 'Zelda, Baldur’s Gate, Wingspan...'),
       choice('with', 'How do they play?', ['Solo', 'With friends online', 'With you', 'Board game nights']),
+      text('alltime', 'Their all-time favorite game?', 'Ocarina of Time, Catan...'),
     ],
   },
   {
@@ -129,6 +138,7 @@ export const INTERESTS: readonly Interest[] = [
       text('destination', 'A place they dream about?', 'Japan, Lisbon, the Boundary Waters...'),
       choice('style', 'Their kind of trip?', ['Beach', 'Big city', 'Mountains', 'Road trip', 'Somewhere new every time']),
       text('next', 'The next trip on the calendar?', 'Duluth in October, the cabin...'),
+      text('bucket', 'The one trip they say they will do someday?', 'Japan in cherry blossom season...'),
     ],
   },
   {
@@ -137,6 +147,7 @@ export const INTERESTS: readonly Interest[] = [
     followUps: [
       choice('activity', 'What gets them outside?', ['Hiking', 'Camping', 'Fishing', 'Kayaking', 'Biking', 'Skiing', 'Gardening'], true),
       text('spot', 'A favorite spot?', 'Gooseberry Falls, the lake cabin...'),
+      choice('season', 'Their season?', ['Spring', 'Summer', 'Fall', 'Winter']),
     ],
   },
   {
@@ -145,6 +156,7 @@ export const INTERESTS: readonly Interest[] = [
     followUps: [
       choice('grows', 'What do they grow?', ['Vegetables', 'Flowers', 'Houseplants', 'Herbs', 'Fruit'], true),
       text('project', "Something they're trying this year?", 'Tomatoes from seed, a raised bed...'),
+      text('pride', 'The plant they are proudest of?', 'The fiddle-leaf fig, the tomatoes...'),
     ],
   },
   {
@@ -165,6 +177,8 @@ export const INTERESTS: readonly Interest[] = [
     followUps: [
       choice('ages', 'How old are the kids?', ['Baby', 'Toddler', 'School age', 'Teen', 'Grown'], true),
       text('activity', "Something the kids are into?", 'Soccer, Minecraft, dinosaurs...'),
+      text('school', 'A teacher, coach, or school thing on their mind?', 'Parent-teacher night, the new coach...'),
+      choice('hardest', 'The hardest part of the day?', ['Mornings', 'After school', 'Bedtime', 'Weekends']),
     ],
   },
   {
@@ -183,6 +197,7 @@ export const INTERESTS: readonly Interest[] = [
     followUps: [
       text('closest', 'Who are they closest to?', 'Their mom, their brother Dan...'),
       text('upcoming', 'Anything coming up with family?', 'A reunion, a birthday, a hard anniversary...'),
+      text('tradition', 'A family tradition they care about?', 'Sunday dinners, the cabin weekend...'),
     ],
   },
   {
@@ -192,6 +207,7 @@ export const INTERESTS: readonly Interest[] = [
       choice('kind', 'What kind?', ['Dog', 'Cat', 'Other'], true),
       text('name', "The pet's name?", 'Waffles'),
       text('quirk', 'A thing the pet always does?', 'Steals socks, screams at 6am...'),
+      text('vet', 'Anything health-related with the pet?', 'The limp, the diet, a checkup...'),
     ],
   },
   {
@@ -208,6 +224,7 @@ export const INTERESTS: readonly Interest[] = [
     followUps: [
       text('community', 'Their tradition or community?', 'St. Mark’s, a meditation group...'),
       choice('practice', 'What does it look like day to day?', ['Weekly services', 'Personal practice', 'Exploring']),
+      text('season', 'A holiday or season that matters to them?', 'Advent, Ramadan, Passover...'),
     ],
   },
   {
@@ -216,6 +233,7 @@ export const INTERESTS: readonly Interest[] = [
     followUps: [
       text('goal', 'What are they saving toward?', 'A house, a trip, retiring early...'),
       choice('style', 'Their money style?', ['Spreadsheet person', 'Go with the flow', 'Somewhere between']),
+      text('worry', 'The money thing that nags at them?', 'The mortgage, retirement, the car...'),
     ],
   },
   {
@@ -235,6 +253,51 @@ export const INTERESTS: readonly Interest[] = [
       text('spot', 'A spot they keep going back to?', 'The coffee shop on the corner, the lake path...'),
       text('wishlist', "A place they've been meaning to try?", 'That new ramen place, the climbing gym...'),
       choice('weekend', 'Their ideal weekend around town?', ['Farmers market', 'Long walk', 'Brunch', 'A show', 'Staying in']),
+    ],
+  },
+  {
+    id: 'podcasts',
+    label: 'Podcasts & YouTube',
+    followUps: [
+      text('show', 'A podcast or channel they never miss?', 'The Rest Is History, a woodworking channel...'),
+      choice('kind', 'What kind?', ['News', 'True crime', 'Comedy', 'Interviews', 'How-to', 'Sports talk', 'History'], true),
+      choice('when', 'When do they listen?', ['Commute', 'Chores', 'Workouts', 'Falling asleep']),
+    ],
+  },
+  {
+    id: 'drinks',
+    label: 'Coffee & drinks',
+    followUps: [
+      text('order', 'Their usual order?', 'Oat milk latte, an old fashioned, kombucha...'),
+      text('spot', 'A coffee shop or bar they love?', 'Spyhouse, the brewery on Central...'),
+      choice('ritual', 'Their drink ritual?', ['First coffee in silence', 'Afternoon pick-me-up', 'A drink after work', 'Weekend brunch']),
+    ],
+  },
+  {
+    id: 'style',
+    label: 'Style & self-care',
+    followUps: [
+      text('signature', 'A signature piece or look?', 'The green jacket, the boots, red lipstick...'),
+      choice('care', 'What do they do for themselves?', ['Skincare', 'Haircuts', 'Massage', 'Nails', 'Long baths', 'A good nap'], true),
+      text('wishlist', 'Something they keep eyeing but have not bought?', 'The nice boots, a watch...'),
+    ],
+  },
+  {
+    id: 'volunteering',
+    label: 'Causes & volunteering',
+    followUps: [
+      text('cause', 'A cause they care about?', 'The food shelf, the shelter, the school board...'),
+      choice('how', 'How do they show up?', ['Volunteering time', 'Donating', 'Organizing', 'Following closely']),
+      text('org', 'An organization they are part of?', 'Second Harvest, the neighborhood association...'),
+    ],
+  },
+  {
+    id: 'wellness',
+    label: 'Sleep & wellness',
+    followUps: [
+      choice('sleep', 'How is their sleep lately?', ['Great', 'Fine', 'Rough', 'Depends on the week']),
+      choice('recharge', 'How do they recharge?', ['Alone time', 'Being with people', 'Outside', 'A screen and a blanket', 'Making something'], true),
+      text('stress', 'What stresses them most these days?', 'Work, money, the news, the kids...'),
     ],
   },
   {
