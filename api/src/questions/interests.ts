@@ -178,7 +178,7 @@ export const INTERESTS: readonly Interest[] = [
       choice('ages', 'How old are the kids?', ['Baby', 'Toddler', 'School age', 'Teen', 'Grown'], true),
       text('activity', "Something the kids are into?", 'Soccer, Minecraft, dinosaurs...'),
       text('school', 'A teacher, coach, or school thing on their mind?', 'Parent-teacher night, the new coach...'),
-      choice('hardest', 'The hardest part of the day?', ['Mornings', 'After school', 'Bedtime', 'Weekends']),
+      choice('hardest', 'The part of the day that takes the most energy?', ['Mornings', 'After school', 'Bedtime', 'Weekends']),
     ],
   },
   {
@@ -233,7 +233,7 @@ export const INTERESTS: readonly Interest[] = [
     followUps: [
       text('goal', 'What are they saving toward?', 'A house, a trip, retiring early...'),
       choice('style', 'Their money style?', ['Spreadsheet person', 'Go with the flow', 'Somewhere between']),
-      text('worry', 'The money thing that nags at them?', 'The mortgage, retirement, the car...'),
+      text('worry', 'A money goal they would love to have sorted?', 'The mortgage, retirement, the car...'),
     ],
   },
   {
@@ -297,7 +297,7 @@ export const INTERESTS: readonly Interest[] = [
     followUps: [
       choice('sleep', 'How is their sleep lately?', ['Great', 'Fine', 'Rough', 'Depends on the week']),
       choice('recharge', 'How do they recharge?', ['Alone time', 'Being with people', 'Outside', 'A screen and a blanket', 'Making something'], true),
-      text('stress', 'What stresses them most these days?', 'Work, money, the news, the kids...'),
+      text('unwind', 'What helps them unwind?', 'A walk, a bath, cooking, a dumb show...'),
     ],
   },
   {

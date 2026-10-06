@@ -88,7 +88,8 @@ What makes a question good here:
 - It is easy to answer and opens a door. "What's the next step on the basement?" beats "Tell me about your home projects."
 - It is timely when the brief allows it: a game this weekend, an event in their city this month, a new place that just opened.
 - It respects hidden questions: do not write near-duplicates of anything the asker hid. Lean toward the shape of questions they liked.
-- Spread across their interests; do not write five about the same thing. Include one or two general questions about their week or their worries.
+- Spread across their interests; do not write five about the same thing. Include one or two general questions about their week.
+- Keep it positive. Ask about what they're enjoying, proud of, looking forward to, or would love more of. Never ask them to list problems, complaints, dreads, worries, or things the asker does wrong. If a detail is a stressor, ask about the relief, the help, or the win, not the stress.
 
 Return only the structured output. For each question set interest to the matching interest id from the list in the profile, or null for a general question. Keep basis to one short line.`;
 

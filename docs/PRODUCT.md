@@ -14,6 +14,7 @@ The user is one half of the couple. They set up a profile *about* their person. 
 
 1. **Simplicity is the feature.** One screen with one question beats a dashboard. Every added field has to earn its place.
 2. **Prompts, not advice.** The app never tells you how to have a relationship. It just hands you a good question and gets out of the way.
+2a. **Positive by design.** Every question points at something they enjoy, are proud of, look forward to, or would love more of. The bank never asks someone to list problems, dreads, or what their partner does wrong. When a detail is a stressor, the question is about the relief or the win. The AI engine has the same rule in its instructions.
 3. **The user is the editor.** A thumbs-down hides a question for good. A thumbs-up nudges more like it. The question bank gets better for *this* couple over time.
 4. **Low ceremony.** No account to create for the MVP. No daily streaks or guilt. Open it when you want a question.
 
