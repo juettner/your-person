@@ -70,6 +70,39 @@ export class GeneratedSetSubdocument {
   basis: string;
 }
 
+@Schema({ _id: false })
+export class MemorySubdocument {
+  @Prop({ required: true })
+  id: string;
+
+  @Prop()
+  questionId?: string;
+
+  @Prop()
+  questionText?: string;
+
+  @Prop({ required: true })
+  text: string;
+
+  @Prop({ required: true })
+  createdAt: Date;
+}
+
+@Schema({ _id: false })
+export class ImportantDateSubdocument {
+  @Prop({ required: true })
+  id: string;
+
+  @Prop({ required: true })
+  label: string;
+
+  @Prop({ required: true })
+  month: number;
+
+  @Prop({ required: true })
+  day: number;
+}
+
 @Schema({ collection: 'profiles', timestamps: true })
 export class ProfileDocument {
   /** We supply our own UUID instead of letting Mongo generate an ObjectId. */
@@ -102,6 +135,15 @@ export class ProfileDocument {
 
   @Prop({ type: SchemaFactory.createForClass(GeneratedSetSubdocument), default: () => ({ questions: [], generatedAt: null, basis: '' }) })
   generated: GeneratedSetSubdocument;
+
+  @Prop({ type: [SchemaFactory.createForClass(MemorySubdocument)], default: [] })
+  memories: MemorySubdocument[];
+
+  @Prop({ type: [SchemaFactory.createForClass(ImportantDateSubdocument)], default: [] })
+  dates: ImportantDateSubdocument[];
+
+  @Prop({ type: Date })
+  detailsUpdatedAt?: Date;
 
   // Filled in automatically by `timestamps: true`.
   createdAt: Date;

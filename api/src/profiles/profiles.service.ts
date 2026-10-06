@@ -2,11 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { GenerationScheduler } from '../ai/generation-scheduler.service.js';
 import type { CreateProfileDto } from './dto/create-profile.dto.js';
+import type { ImportantDateDto } from './dto/important-date.dto.js';
 import type { LocationDto } from './dto/location.dto.js';
+import type { CreateMemoryDto } from './dto/memory.dto.js';
+import { findQuestion } from '../questions/question-bank.js';
 import type { UpdateProfileDto } from './dto/update-profile.dto.js';
 import {
   EMPTY_GENERATED,
+  ImportantDate,
   InterestDetails,
+  Memory,
   PartnerProfile,
   ProfileLocation,
   ProfileResponse,
@@ -38,6 +43,9 @@ export class ProfilesService {
       feedback: [],
       recentlyShown: [],
       generated: { ...EMPTY_GENERATED },
+      memories: [],
+      dates: cleanDates(dto.dates ?? []),
+      detailsUpdatedAt: now,
       createdAt: now,
       updatedAt: now,
     };
@@ -60,7 +68,9 @@ export class ProfilesService {
     // whenever either side changed.
     if (dto.interests !== undefined || dto.interestDetails !== undefined) {
       profile.interestDetails = cleanDetails(profile.interestDetails, profile.interests);
+      profile.detailsUpdatedAt = new Date();
     }
+    if (dto.dates !== undefined) profile.dates = cleanDates(dto.dates);
     if (dto.location !== undefined) profile.location = cleanLocation(dto.location);
     if (dto.currentFocus !== undefined) profile.currentFocus = blankToUndefined(dto.currentFocus);
     if (dto.notes !== undefined) profile.notes = blankToUndefined(dto.notes);
@@ -69,6 +79,37 @@ export class ProfilesService {
     // The inputs may have changed; the scheduler decides whether the AI deck is stale.
     if (this.scheduler.isStale(saved)) this.scheduler.refreshInBackground(saved.id);
     return toProfileResponse(saved);
+  }
+
+  /** Write down something your person said. */
+  async addMemory(id: string, dto: CreateMemoryDto): Promise<Memory> {
+    const profile = await this.load(id);
+    const questionText = dto.questionId
+      ? (findQuestion(dto.questionId)?.text ?? profile.generated.questions.find((q) => q.id === dto.questionId)?.text)
+      : undefined;
+    const memory: Memory = {
+      id: randomUUID(),
+      questionId: dto.questionId,
+      questionText,
+      text: dto.text.trim(),
+      createdAt: new Date(),
+    };
+    profile.memories = [...profile.memories, memory].slice(-500);
+    profile.updatedAt = new Date();
+    await this.profiles.save(profile);
+    return memory;
+  }
+
+  async listMemories(id: string): Promise<Memory[]> {
+    const profile = await this.load(id);
+    return [...profile.memories].reverse(); // newest first
+  }
+
+  async deleteMemory(id: string, memoryId: string): Promise<void> {
+    const profile = await this.load(id);
+    if (!profile.memories.some((m) => m.id === memoryId)) throw new NotFoundException(`Memory ${memoryId} not found`);
+    profile.memories = profile.memories.filter((m) => m.id !== memoryId);
+    await this.profiles.save(profile);
   }
 
   /** Internal: full aggregate for other services (questions). Throws 404 if missing. */
@@ -97,6 +138,20 @@ function cleanLocation(location: LocationDto | null | undefined): ProfileLocatio
     region: blankToUndefined(location.region),
     country: blankToUndefined(location.country),
   };
+}
+
+function cleanDates(dates: ImportantDateDto[]): ImportantDate[] {
+  const seen = new Set<string>();
+  const out: ImportantDate[] = [];
+  for (const d of dates) {
+    const label = d.label.trim();
+    if (!label) continue;
+    const id = `date-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${d.month}-${d.day}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push({ id, label, month: d.month, day: d.day });
+  }
+  return out;
 }
 
 /**

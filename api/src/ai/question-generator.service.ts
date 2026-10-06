@@ -89,6 +89,7 @@ What makes a question good here:
 - It is timely when the brief allows it: a game this weekend, an event in their city this month, a new place that just opened.
 - It respects hidden questions: do not write near-duplicates of anything the asker hid. Lean toward the shape of questions they liked.
 - Spread across their interests; do not write five about the same thing. Include one or two general questions about their week.
+- Most questions are questions to ask. Include one or two "say it out loud" cards: a specific appreciation the asker could tell their person, phrased as an instruction ("Tell them..."), with interest set to null.
 - Keep it positive. Ask about what they're enjoying, proud of, looking forward to, or would love more of. Never ask them to list problems, complaints, dreads, worries, or things the asker does wrong. If a detail is a stressor, ask about the relief, the help, or the win, not the stress.
 
 Return only the structured output. For each question set interest to the matching interest id from the list in the profile, or null for a general question. Keep basis to one short line.`;
@@ -109,6 +110,8 @@ export function buildUserPrompt(profile: PartnerProfile, research: string | null
   const hidden = profile.feedback.filter((f) => f.score === -1).map((f) => questionText(profile, f.questionId)).filter(Boolean);
   const liked = profile.feedback.filter((f) => f.score === 1).map((f) => questionText(profile, f.questionId)).filter(Boolean);
   const existing = profile.generated.questions.map((q) => q.text);
+  const memories = profile.memories.slice(-15).map((m) => (m.questionText ? `- Asked "${m.questionText}" and they said: ${m.text}` : `- They said: ${m.text}`));
+  const dates = profile.dates.map((d) => `- ${d.label}: ${d.month}/${d.day}`);
 
   const parts: string[] = [];
   parts.push(`Partner's name: ${profile.name}`);
@@ -120,6 +123,8 @@ export function buildUserPrompt(profile: PartnerProfile, research: string | null
   parts.push(`What's going on in their world lately: ${profile.currentFocus ?? '(not given)'}`);
   parts.push(`Interests (id (label): follow-up answers):\n${interestLines.join('\n') || '- none selected'}`);
   parts.push(`Valid interest ids: ${INTERESTS.map((i) => i.id).join(', ')}`);
+  if (dates.length) parts.push(`Dates that matter (month/day):\n${dates.join('\n')}`);
+  if (memories.length) parts.push(`Things they have said recently (the best material you have; build on it, do not repeat it back):\n${memories.join('\n')}`);
   if (liked.length) parts.push(`Questions the asker liked:\n${liked.map((t) => `- ${t}`).join('\n')}`);
   if (hidden.length) parts.push(`Questions the asker hid (avoid anything like these):\n${hidden.map((t) => `- ${t}`).join('\n')}`);
   if (existing.length) parts.push(`Already in the deck (do not repeat):\n${existing.map((t) => `- ${t}`).join('\n')}`);

@@ -8,7 +8,7 @@ const DEFAULT_COUNT = 3;
 
 /**
  * Prompts are a sub-resource of a profile:
- *   GET  /api/profiles/:profileId/questions?count=3
+ *   GET  /api/profiles/:profileId/questions?count=3&mode=day|evening
  *   POST /api/profiles/:profileId/questions/:questionId/rating   { "score": 1 | -1 }
  *   POST /api/profiles/:profileId/questions/generate               refresh the AI deck now
  */
@@ -20,9 +20,10 @@ export class QuestionsController {
   getPrompts(
     @Param('profileId') profileId: string,
     @Query('count', new DefaultValuePipe(DEFAULT_COUNT), ParseIntPipe) count: number,
+    @Query('mode', new DefaultValuePipe('day')) mode: string,
   ) {
     const clamped = Math.min(MAX_COUNT, Math.max(MIN_COUNT, count));
-    return this.service.getPrompts(profileId, clamped);
+    return this.service.getPrompts(profileId, clamped, mode === 'evening' ? 'evening' : 'day');
   }
 
   @Post('generate')

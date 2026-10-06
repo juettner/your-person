@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { InterestDetails } from '../profiles/profile.model.js';
 import { GENERAL_TAG } from './interests.js';
-import type { Question } from './question-bank.js';
+import type { Question, QuestionKind } from './question-bank.js';
 import { hasRequiredDetails } from './question-template.js';
 
 /**
@@ -25,15 +25,31 @@ export interface SelectionInput {
   /** Question ids shown recently, oldest first. Avoided while fresh ones exist. */
   recentlyShown: readonly string[];
   count: number;
+  /**
+   * `day` (default): questions, with at most one appreciation, bid, or dream card per batch.
+   * `evening`: the end-of-day conversation: stress cards and appreciations only.
+   */
+  mode?: SelectionMode;
 }
+
+export type SelectionMode = 'day' | 'evening';
 
 /** A function returning a float in [0, 1). Injected so tests are deterministic. */
 export type Rng = () => number;
 
-const WEIGHT_PERSONAL = 5; // AI-written or detail-driven
+const WEIGHT_PERSONAL = 5; // AI-written, detail-driven, or synthesized for this profile
 const WEIGHT_INTEREST_MATCH = 3;
 const WEIGHT_GENERAL = 1;
 const WEIGHT_LIKED_BONUS = 1;
+/** Non-question cards are deliberately occasional in day mode. */
+const KIND_WEIGHT: Record<QuestionKind, number> = { question: 1, appreciation: 0.6, bid: 0.5, dream: 0.3, stress: 1 };
+
+const DAY_KINDS: ReadonlySet<QuestionKind> = new Set(['question', 'appreciation', 'bid', 'dream']);
+const EVENING_KINDS: ReadonlySet<QuestionKind> = new Set(['stress', 'appreciation']);
+
+function kindOf(q: Question): QuestionKind {
+  return q.kind ?? 'question';
+}
 
 /**
  * Picks which questions to show. Pure logic, no I/O, so it is cheap to unit test.
@@ -55,12 +71,16 @@ export class QuestionSelectorService {
 
   select(input: SelectionInput, rng: Rng = Math.random): Question[] {
     const interests = new Set(input.interests);
+    const allowedKinds = input.mode === 'evening' ? EVENING_KINDS : DAY_KINDS;
     const matchesProfile = (q: Question) =>
       q.source === 'ai' ||
+      q.personal ||
       ((q.tags.includes(GENERAL_TAG) || q.tags.some((t) => interests.has(t))) &&
         hasRequiredDetails(input.details, q.requires));
 
-    const candidates = [...this.bank, ...input.extra].filter((q) => !input.hidden.has(q.id) && matchesProfile(q));
+    const candidates = [...this.bank, ...input.extra].filter(
+      (q) => !input.hidden.has(q.id) && allowedKinds.has(kindOf(q)) && matchesProfile(q),
+    );
 
     const recentIndex = new Map(input.recentlyShown.map((id, i) => [id, i]));
     const fresh = candidates.filter((q) => !recentIndex.has(q.id));
@@ -76,24 +96,31 @@ export class QuestionSelectorService {
 
     const weightOf = (q: Question) => {
       let w = WEIGHT_GENERAL;
-      if (q.source === 'ai' || q.requires?.length) w = WEIGHT_PERSONAL;
+      if (q.source === 'ai' || q.personal || q.requires?.length) w = WEIGHT_PERSONAL;
       else if (q.tags.some((t) => interests.has(t))) w = WEIGHT_INTEREST_MATCH;
       if (input.liked.has(q.id)) w += WEIGHT_LIKED_BONUS;
-      return w;
+      return w * KIND_WEIGHT[kindOf(q)];
     };
 
     const picked: Question[] = [];
     const usedTags = new Set<string>();
+    const usedKinds = new Set<QuestionKind>();
     let remaining = [...pool];
 
     while (picked.length < input.count && remaining.length > 0) {
-      // Rule 5: try to keep variety by skipping tags already picked this batch.
-      const varied = remaining.filter((q) => !q.tags.some((t) => t !== GENERAL_TAG && usedTags.has(t)));
+      // Rule 5: keep variety: skip tags already picked, and allow only one
+      // appreciation / bid / dream card per batch (stress cards may repeat in evening mode).
+      const varied = remaining.filter(
+        (q) =>
+          !q.tags.some((t) => t !== GENERAL_TAG && usedTags.has(t)) &&
+          !(kindOf(q) !== 'question' && kindOf(q) !== 'stress' && usedKinds.has(kindOf(q))),
+      );
       const choices = varied.length > 0 ? varied : remaining;
 
       const chosen = weightedPick(choices, weightOf, rng);
       picked.push(chosen);
       chosen.tags.forEach((t) => usedTags.add(t));
+      usedKinds.add(kindOf(chosen));
       remaining = remaining.filter((q) => q.id !== chosen.id);
     }
 

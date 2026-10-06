@@ -56,7 +56,7 @@ describe('QuestionSelectorService', () => {
 
   it('prefers fresh questions over recently shown ones', () => {
     // General questions that need no details (city questions are general but require profile.city).
-    const general = QUESTION_BANK.filter((q) => q.tags.includes('general') && !q.requires?.length).map((q) => q.id);
+    const general = QUESTION_BANK.filter((q) => q.tags.includes('general') && !q.requires?.length && q.kind !== 'stress').map((q) => q.id);
     const recentlyShown = general.slice(0, general.length - 2);
     const result = selector().select({
       interests: [],
@@ -71,7 +71,7 @@ describe('QuestionSelectorService', () => {
   });
 
   it('falls back to the longest-ago questions when the pool runs dry', () => {
-    const general = QUESTION_BANK.filter((q) => q.tags.includes('general') && !q.requires?.length).map((q) => q.id);
+    const general = QUESTION_BANK.filter((q) => q.tags.includes('general') && !q.requires?.length && q.kind !== 'stress').map((q) => q.id);
     // Everything has been shown; oldest first.
     const result = selector().select(
       { interests: [], details: {}, extra: [], hidden: new Set(), liked: new Set(), recentlyShown: general, count: 2 },

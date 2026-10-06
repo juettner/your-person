@@ -301,6 +301,15 @@ export const INTERESTS: readonly Interest[] = [
     ],
   },
   {
+    id: 'rituals',
+    label: 'Our rituals',
+    followUps: [
+      text('daily', 'A small daily thing that is yours?', 'Coffee on the porch, the goodbye kiss...'),
+      text('weekly', 'A weekly thing you protect?', 'Friday pizza, Sunday walk...'),
+      text('yearly', 'A yearly tradition?', 'The cabin in August, the first snow drive...'),
+    ],
+  },
+  {
     id: 'learning',
     label: 'Learning new things',
     followUps: [

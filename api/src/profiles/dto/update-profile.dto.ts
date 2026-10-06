@@ -12,6 +12,7 @@ import {
 import { INTEREST_IDS } from '../../questions/interests.js';
 import type { InterestDetails } from '../profile.model.js';
 import { IsInterestDetails } from './interest-details.validator.js';
+import { ImportantDateDto } from './important-date.dto.js';
 import { LocationDto } from './location.dto.js';
 
 /** Request body for PATCH /api/profiles/:id. Every field is optional; only sent fields change. */
@@ -37,6 +38,14 @@ export class UpdateProfileDto {
   @ValidateNested()
   @Type(() => LocationDto)
   location?: LocationDto | null;
+
+  /** Replaces the whole list when sent. */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => ImportantDateDto)
+  dates?: ImportantDateDto[];
 
   @IsOptional()
   @IsString()

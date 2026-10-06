@@ -20,7 +20,20 @@ export interface Question {
   requires?: readonly string[];
   /** Curated (default) or written by the AI engine for one profile. */
   source?: 'curated' | 'ai';
+  /**
+   * What kind of card this is. Ideas borrowed from the Gottmans' research:
+   *  question      ask your person something (the default)
+   *  appreciation  say something out loud to them, no question mark needed
+   *  bid           a tiny thing to do today: notice a bid for attention and turn toward it
+   *  dream         a rarer, deeper card about what things mean to them
+   *  stress        the end-of-day "stress-reducing conversation": listen, take their side, don't fix
+   */
+  kind?: QuestionKind;
+  /** Synthesized per profile (dates); treated as personal in selection. */
+  personal?: boolean;
 }
+
+export type QuestionKind = 'question' | 'appreciation' | 'bid' | 'dream' | 'stress';
 
 const G = GENERAL_TAG;
 
@@ -279,6 +292,57 @@ export const QUESTION_BANK: readonly Question[] = [
   { id: 'wel03', text: 'You recharge with {wellness.recharge|lower}. When did you last get enough of it?', tags: ['wellness'], requires: ['wellness.recharge'] },
   { id: 'wel04', text: 'What would a genuinely restful day look like for you right now?', tags: ['wellness', G] },
   { id: 'wel05', text: "What's one thing I could take off your plate this week?", tags: ['wellness', G] },
+  // --- our rituals ---
+  { id: 'rit01', text: 'Is {rituals.weekly|lower} still happening this week? Want me to guard it?', tags: ['rituals'], requires: ['rituals.weekly'] },
+  { id: 'rit02', text: 'What do you love most about {rituals.daily|lower}?', tags: ['rituals'], requires: ['rituals.daily'] },
+  { id: 'rit03', text: 'How do you want {rituals.yearly|lower} to go this year?', tags: ['rituals'], requires: ['rituals.yearly'] },
+  { id: 'rit04', text: "What's a tiny ritual we could start that would take five minutes?", tags: ['rituals', G] },
+
+  // --- appreciation: say it out loud (not a question) ---
+  { id: 'app01', kind: 'appreciation', text: 'Tell them one thing they did this week that made your life easier.', tags: [G] },
+  { id: 'app02', kind: 'appreciation', text: 'Tell them something you admire about how they handled a hard moment lately.', tags: [G] },
+  { id: 'app03', kind: 'appreciation', text: 'Name a small habit of theirs that you secretly love.', tags: [G] },
+  { id: 'app04', kind: 'appreciation', text: "Tell them a moment from early on that you still think about.", tags: [G] },
+  { id: 'app05', kind: 'appreciation', text: 'Thank them for something they probably think you did not notice.', tags: [G] },
+  { id: 'app06', kind: 'appreciation', text: 'Tell them one way they have made you better.', tags: [G] },
+  { id: 'app07', kind: 'appreciation', text: "Tell them what you were proud of them for this month.", tags: [G] },
+  { id: 'app08', kind: 'appreciation', text: 'Tell them the thing about them your friends always mention.', tags: [G] },
+  { id: 'app09', kind: 'appreciation', text: 'Tell them what you look forward to when you know you will see them.', tags: [G] },
+  { id: 'app10', kind: 'appreciation', text: 'Tell them how they make {cooking.dish|lower} taste like home.', tags: ['cooking'], requires: ['cooking.dish'] },
+  { id: 'app11', kind: 'appreciation', text: 'Tell them you noticed how much work they put into {work.project|lower}.', tags: ['work'], requires: ['work.project'] },
+  { id: 'app12', kind: 'appreciation', text: 'Tell them something you admire about how they are with the kids.', tags: ['kids'] },
+
+  // --- bids: one tiny thing to do today ---
+  { id: 'bid01', kind: 'bid', text: 'Today: when they point something out, stop and look. Just that.', tags: [G] },
+  { id: 'bid02', kind: 'bid', text: 'Today: put the phone face down when they start talking.', tags: [G] },
+  { id: 'bid03', kind: 'bid', text: 'Today: say goodbye like you mean it. Six seconds counts.', tags: [G] },
+  { id: 'bid04', kind: 'bid', text: 'Today: ask one follow-up question about the thing they mention first.', tags: [G] },
+  { id: 'bid05', kind: 'bid', text: 'Today: send them one message that is not logistics.', tags: [G] },
+  { id: 'bid06', kind: 'bid', text: 'Today: when they laugh at something, ask to see it.', tags: [G] },
+  { id: 'bid07', kind: 'bid', text: 'Today: notice one thing they did around the house and say so.', tags: [G] },
+  { id: 'bid08', kind: 'bid', text: 'Today: bring them {drinks.order|lower} without being asked.', tags: ['drinks'], requires: ['drinks.order'] },
+
+  // --- dreams: rarer, deeper ---
+  { id: 'drm01', kind: 'dream', text: 'When you picture us ten years from now, what is the first thing you see?', tags: [G] },
+  { id: 'drm02', kind: 'dream', text: "What does \u201chome\u201d mean to you, underneath the house?", tags: [G] },
+  { id: 'drm03', kind: 'dream', text: "What's a dream you had as a kid that still has a little life in it?", tags: [G] },
+  { id: 'drm04', kind: 'dream', text: 'What would you want people to say about us at our fiftieth?', tags: [G] },
+  { id: 'drm05', kind: 'dream', text: 'What does {travel.bucket} mean to you? Why that place?', tags: ['travel'], requires: ['travel.bucket'] },
+  { id: 'drm06', kind: 'dream', text: 'What is {home.project|lower} really about for you?', tags: ['home'], requires: ['home.project'] },
+  { id: 'drm07', kind: 'dream', text: 'If {work.dream|lower} happened, what would it give you that you want most?', tags: ['work'], requires: ['work.dream'] },
+  { id: 'drm08', kind: 'dream', text: 'What do you hope the kids remember about this stretch of years?', tags: ['kids'] },
+
+  // --- evening: the stress-reducing conversation. Listen, take their side, don't fix. ---
+  { id: 'eve01', kind: 'stress', text: 'What was the most draining part of today? I am on your side.', tags: [G] },
+  { id: 'eve02', kind: 'stress', text: 'Who made today harder than it needed to be?', tags: [G] },
+  { id: 'eve03', kind: 'stress', text: 'What is still sitting on you from today that you want to put down?', tags: [G] },
+  { id: 'eve04', kind: 'stress', text: 'What do you need tonight: to talk it out, to be distracted, or to be left alone a bit?', tags: [G] },
+  { id: 'eve05', kind: 'stress', text: 'Was there a moment today you wished I had been there for?', tags: [G] },
+  { id: 'eve06', kind: 'stress', text: 'What was the best part of today, even if it was small?', tags: [G] },
+  { id: 'eve07', kind: 'stress', text: "How did {work.project|lower} go today? Just tell me, I will not try to solve it.", tags: ['work'], requires: ['work.project'] },
+  { id: 'eve08', kind: 'stress', text: 'How did {kids.hardest|lower} go today?', tags: ['kids'], requires: ['kids.hardest'] },
+  { id: 'eve09', kind: 'stress', text: 'What would make tomorrow a little lighter?', tags: [G] },
+  { id: 'eve10', kind: 'stress', text: 'Do you want to vent for five minutes with no advice from me?', tags: [G] },
 ];
 
 const byId = new Map(QUESTION_BANK.map((q) => [q.id, q]));

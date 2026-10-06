@@ -71,6 +71,9 @@ function toDomain(doc: ProfileDocument): PartnerProfile {
           basis: doc.generated.basis ?? '',
         }
       : { ...EMPTY_GENERATED },
+    memories: (doc.memories ?? []).map((m) => ({ id: m.id, questionId: m.questionId, questionText: m.questionText, text: m.text, createdAt: m.createdAt })),
+    dates: (doc.dates ?? []).map((d) => ({ id: d.id, label: d.label, month: d.month, day: d.day })),
+    detailsUpdatedAt: doc.detailsUpdatedAt ?? doc.updatedAt,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -87,5 +90,8 @@ function toDocument(profile: PartnerProfile): Partial<ProfileDocument> {
     feedback: profile.feedback,
     recentlyShown: profile.recentlyShown,
     generated: profile.generated,
+    memories: profile.memories,
+    dates: profile.dates,
+    detailsUpdatedAt: profile.detailsUpdatedAt,
   };
 }

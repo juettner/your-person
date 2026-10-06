@@ -96,6 +96,7 @@ describe('your-person API (e2e)', () => {
       text: expect.any(String),
       interest: expect.toSatisfy((v: unknown) => v === null || v === 'Gaming'),
       source: 'curated',
+      kind: expect.any(String),
     });
 
     const second = await request(app.getHttpServer()).get(`/api/profiles/${id}/questions?count=2`).expect(200);
@@ -207,6 +208,38 @@ describe('your-person API (e2e)', () => {
     const res = await request(app.getHttpServer()).post(`/api/profiles/${created.body.id}/questions/generate`).expect(201);
     expect(res.body).toEqual({ enabled: false, generated: 0 });
     expect(created.body.aiQuestionCount).toBe(0);
+  });
+
+  it('keeps memories, feeds dates into prompts, and has an evening mode', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/api/profiles')
+      .send({ name: 'Sam', interests: ['sports'], dates: [{ label: ' Anniversary ', month: 6, day: 14 }, { label: 'Anniversary', month: 6, day: 14 }] })
+      .expect(201);
+    const id = created.body.id;
+    expect(created.body.dates).toEqual([{ id: 'date-anniversary-6-14', label: 'Anniversary', month: 6, day: 14 }]);
+
+    // Memories
+    const mem = await request(app.getHttpServer()).post(`/api/profiles/${id}/memories`).send({ text: '  Loves the new stadium  ', questionId: 'spo03' }).expect(201);
+    expect(mem.body).toMatchObject({ id: expect.any(String), text: 'Loves the new stadium', questionId: 'spo03', questionText: expect.stringContaining('looking') });
+    await request(app.getHttpServer()).post(`/api/profiles/${id}/memories`).send({ text: '' }).expect(400);
+    const list = await request(app.getHttpServer()).get(`/api/profiles/${id}/memories`).expect(200);
+    expect(list.body).toHaveLength(1);
+    const prof = await request(app.getHttpServer()).get(`/api/profiles/${id}`).expect(200);
+    expect(prof.body.memoryCount).toBe(1);
+    await request(app.getHttpServer()).delete(`/api/profiles/${id}/memories/${mem.body.id}`).expect(204);
+    await request(app.getHttpServer()).delete(`/api/profiles/${id}/memories/${mem.body.id}`).expect(404);
+
+    // Evening mode serves only stress and appreciation cards; day mode never serves stress cards.
+    const evening = await request(app.getHttpServer()).get(`/api/profiles/${id}/questions?count=5&mode=evening`).expect(200);
+    expect(evening.body.mode).toBe('evening');
+    for (const q of evening.body.questions) expect(['stress', 'appreciation']).toContain(q.kind);
+    for (let i = 0; i < 10; i++) {
+      const day = await request(app.getHttpServer()).get(`/api/profiles/${id}/questions?count=5`).expect(200);
+      expect(day.body.nudges.reviewDetails).toBe(false);
+      for (const q of day.body.questions) expect(q.kind).not.toBe('stress');
+      const kinds = day.body.questions.map((q: { kind: string }) => q.kind).filter((k: string) => k !== 'question');
+      expect(new Set(kinds).size).toBe(kinds.length); // at most one of each special kind per batch
+    }
   });
 
   it('validates ratings', async () => {

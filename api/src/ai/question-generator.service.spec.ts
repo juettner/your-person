@@ -34,6 +34,9 @@ function profile(overrides: Partial<PartnerProfile> = {}): PartnerProfile {
     feedback: [{ questionId: 'g01', score: -1, ratedAt: now }, { questionId: 'spo03', score: 1, ratedAt: now }],
     recentlyShown: [],
     generated: { ...EMPTY_GENERATED },
+    memories: [{ id: 'm1', questionId: 'spo03', questionText: 'How are the Vikings looking?', text: 'Rough year, but Jefferson is a joy', createdAt: now }],
+    dates: [{ id: 'date-anniversary-6-14', label: 'Anniversary', month: 6, day: 14 }],
+    detailsUpdatedAt: now,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -51,6 +54,8 @@ describe('QuestionGeneratorService', () => {
     expect(text).toContain("What's been taking up the most space in your head this week?"); // hidden g01
     expect(text).toContain('How are the {sports.team} looking right now, honestly?'); // liked spo03
     expect(text).toContain('Write 5 questions.');
+    expect(text).toContain('Jefferson is a joy');
+    expect(text).toContain('Anniversary: 6/14');
   });
 
   it('asks research for the things it can look up', () => {
