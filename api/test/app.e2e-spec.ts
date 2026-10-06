@@ -131,7 +131,7 @@ describe('your-person API (e2e)', () => {
   it('serves the follow-up taxonomy with the interests', async () => {
     const res = await request(app.getHttpServer()).get('/api/interests').expect(200);
     const sports = res.body.find((i: { id: string }) => i.id === 'sports');
-    expect(sports.followUps.map((f: { id: string }) => f.id)).toEqual(['sport', 'team', 'involvement', 'watchSpot']);
+    expect(sports.followUps.map((f: { id: string }) => f.id)).toEqual(['sport', 'team', 'involvement', 'watchSpot', 'player', 'rival']);
     expect(sports.followUps[0]).toMatchObject({ kind: 'choice', multi: true });
     expect(sports.followUps[1]).toMatchObject({ kind: 'text' });
   });

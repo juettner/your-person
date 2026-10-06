@@ -43,12 +43,13 @@ export function ThemePicker() {
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap', // ten swatches: two rows of five on a phone
+    gap: Spacing.sm,
   },
   item: {
     alignItems: 'center',
     gap: Spacing.xs,
-    minWidth: 56,
+    width: '18%',
     minHeight: 44,
   },
   swatch: {

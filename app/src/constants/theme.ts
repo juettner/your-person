@@ -13,7 +13,17 @@
  *   accent   the highlight chip behind the interest label, and the button's offset shadow
  */
 
-export type ThemeId = 'sky' | 'lavender' | 'blush' | 'butter' | 'terracotta';
+export type ThemeId =
+  | 'sky'
+  | 'lavender'
+  | 'blush'
+  | 'butter'
+  | 'terracotta'
+  | 'mint'
+  | 'sand'
+  | 'ocean'
+  | 'charcoal'
+  | 'cocoa';
 
 export interface Palette {
   id: ThemeId;
@@ -122,6 +132,91 @@ export const THEMES: readonly Palette[] = [
     outlineText: '#FFFFFF',
     outlineBg: 'transparent',
     danger: '#FFE1DB',
+  },
+  {
+    id: 'mint',
+    name: 'Mint',
+    statusBar: 'dark',
+    ground: '#D6F2E3',
+    onGround: '#0E4D3A',
+    card: '#FFFFFF',
+    ink: '#0E4D3A',
+    muted: '#3F6B5B',
+    accent: '#FF7B54',
+    onAccent: '#0E4D3A',
+    onInk: '#FFFFFF',
+    outlineBorder: '#0E4D3A',
+    outlineText: '#0E4D3A',
+    outlineBg: '#FFFFFF',
+    danger: '#A32626',
+  },
+  {
+    id: 'sand',
+    name: 'Sand',
+    statusBar: 'dark',
+    ground: '#F3E7D3',
+    onGround: '#4A2E14',
+    card: '#FFFCF7',
+    ink: '#4A2E14',
+    muted: '#7A5B3C',
+    accent: '#2F80ED',
+    onAccent: '#FFFFFF',
+    onInk: '#FFFCF7',
+    outlineBorder: '#4A2E14',
+    outlineText: '#4A2E14',
+    outlineBg: '#FFFCF7',
+    danger: '#A32626',
+  },
+  {
+    id: 'ocean',
+    name: 'Ocean',
+    statusBar: 'light',
+    ground: '#0F2F4C',
+    onGround: '#FFFFFF',
+    card: '#FFFFFF',
+    ink: '#0F2F4C',
+    muted: '#4A607A',
+    accent: '#4FD1C5',
+    onAccent: '#0F2F4C',
+    onInk: '#FFFFFF',
+    outlineBorder: '#FFFFFF',
+    outlineText: '#FFFFFF',
+    outlineBg: 'transparent',
+    danger: '#FFD6D1',
+  },
+  {
+    id: 'charcoal',
+    name: 'Charcoal',
+    statusBar: 'light',
+    ground: '#2A2A2E',
+    onGround: '#F7F5EE',
+    card: '#F7F5EE',
+    ink: '#1A1A1A',
+    muted: '#5C5C5C',
+    accent: '#F4E04D',
+    onAccent: '#1A1A1A',
+    onInk: '#F7F5EE',
+    outlineBorder: '#F7F5EE',
+    outlineText: '#F7F5EE',
+    outlineBg: 'transparent',
+    danger: '#FFD6D1',
+  },
+  {
+    id: 'cocoa',
+    name: 'Cocoa',
+    statusBar: 'light',
+    ground: '#5B3A29',
+    onGround: '#FFF6EC',
+    card: '#FFF6EC',
+    ink: '#3A2416',
+    muted: '#7A5A47',
+    accent: '#F2B88A',
+    onAccent: '#3A2416',
+    onInk: '#FFF6EC',
+    outlineBorder: '#FFF6EC',
+    outlineText: '#FFF6EC',
+    outlineBg: 'transparent',
+    danger: '#FFD6D1',
   },
 ];
 

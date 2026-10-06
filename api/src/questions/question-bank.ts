@@ -180,6 +180,40 @@ export const QUESTION_BANK: readonly Question[] = [
   { id: 'spo06', text: 'Want to catch the next game at {sports.watchSpot}?', tags: ['sports'], requires: ['sports.watchSpot'] },
   { id: 'mus06', text: "Who's playing at {music.venue} soon that you'd actually go see?", tags: ['music'], requires: ['music.venue'] },
   { id: 'fri04', text: 'When are you next at {friends.hangout}? Should I come along, or is that yours?', tags: ['friends'], requires: ['friends.hangout'] },
+
+  // --- deeper general: memory, values, the future ---
+  { id: 'g15', text: "What's something you were proud of this week that nobody noticed?", tags: [G] },
+  { id: 'g16', text: 'If you could hand one chore to someone else forever, which one?', tags: [G] },
+  { id: 'g17', text: 'What did you believe about us a year ago that turned out differently?', tags: [G] },
+  { id: 'g18', text: "What's a small ritual you'd like us to have?", tags: [G] },
+  { id: 'g19', text: 'When do you feel most like yourself?', tags: [G] },
+  { id: 'g20', text: "Who's someone you've been meaning to thank?", tags: [G] },
+  { id: 'g21', text: "What's a thing you miss that you haven't said out loud?", tags: [G] },
+  { id: 'g22', text: 'If next year went perfectly, what would be different in October?', tags: [G] },
+  { id: 'g23', text: "What's something I do that you'd never ask me to stop, but secretly love?", tags: [G] },
+  { id: 'g24', text: "What's the best thing you ate this week?", tags: [G] },
+
+  // --- deeper, detail-driven ---
+  { id: 'work07', text: "How's {work.project|lower} going, really? What's the part that keeps you up?", tags: ['work'], requires: ['work.project'] },
+  { id: 'work08', text: "What's the latest with {work.colleague}?", tags: ['work'], requires: ['work.colleague'] },
+  { id: 'cook08', text: 'Want to pick a weekend to finally try making {cooking.want|lower}?', tags: ['cooking'], requires: ['cooking.want'] },
+  { id: 'fit06', text: 'Are {fitness.when|lower} still working for your workouts, or should we move things around?', tags: ['fitness'], requires: ['fitness.when'] },
+  { id: 'read06', text: 'How far are you into {reading.current}? Is it holding up?', tags: ['reading'], requires: ['reading.current'] },
+  { id: 'mus07', text: 'When did {music.song} become ours for you?', tags: ['music'], requires: ['music.song'] },
+  { id: 'game04', text: 'Want to play {gaming.game} together this week? I promise to be bad at it.', tags: ['gaming'], requires: ['gaming.game', 'gaming.with'] },
+  { id: 'trav05', text: "What's one thing you want to make sure we do on the {travel.next} trip?", tags: ['travel'], requires: ['travel.next'] },
+  { id: 'spo07', text: 'Is {sports.player} having the season you hoped for?', tags: ['sports'], requires: ['sports.player'] },
+  { id: 'spo08', text: 'When do we play the {sports.rival} next, and how worried should I be?', tags: ['sports'], requires: ['sports.rival'] },
+  { id: 'pet04', text: 'Did {pets.name} do the thing again today?', tags: ['pets'], requires: ['pets.name', 'pets.quirk'] },
+  { id: 'fri05', text: 'How are you feeling about {friends.upcoming|lower}? Anything I can do?', tags: ['friends'], requires: ['friends.upcoming'] },
+  { id: 'home04', text: 'If {home.blocker|lower} went away tomorrow, what would you do first on {home.project|lower}?', tags: ['home'], requires: ['home.blocker', 'home.project'] },
+  { id: 'learn04', text: "What first got you curious about {learning.topic|lower}?", tags: ['learning'], requires: ['learning.topic'] },
+  { id: 'kid05', text: "What's the thing the kids said this week that you don't want to forget?", tags: ['kids'] },
+  { id: 'fam05', text: 'What did you learn from your family that you want to keep, and what do you want to leave behind?', tags: ['family'] },
+  { id: 'faith04', text: "What's a question about faith you've been sitting with lately?", tags: ['faith'] },
+  { id: 'fin04', text: 'What would you do with a surprise thousand dollars, no strings?', tags: ['finance'] },
+  { id: 'art04', text: 'When you make {art.medium|lower}, what are you thinking about?', tags: ['art'], requires: ['art.medium'] },
+  { id: 'out04', text: 'If we did {outdoors.activity|lower} next weekend, where would you want to go?', tags: ['outdoors'], requires: ['outdoors.activity'] },
 ];
 
 const byId = new Map(QUESTION_BANK.map((q) => [q.id, q]));
