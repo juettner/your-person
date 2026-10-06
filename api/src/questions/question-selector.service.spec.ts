@@ -132,11 +132,12 @@ describe('QuestionSelectorService', () => {
     expect(result).toHaveLength(1);
 
     let aiPicks = 0;
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 400; i++) {
       const [q] = selector().select({ interests: [], details: {}, extra, hidden: new Set(), liked: new Set(), recentlyShown: [], count: 1 });
       if (q.id === 'ai-1') aiPicks++;
     }
-    // 14 general questions at weight 1 vs one AI question at weight 5: ~26% expected.
+    // ~26 general questions at weight 1, ~30 special cards at reduced weight, one AI question at
+    // weight 5: roughly 11% expected, so ~45 of 400. Anything above 20 shows the boost is working.
     expect(aiPicks).toBeGreaterThan(20);
 
     const hiddenResult = selector().select({ interests: [], details: {}, extra, hidden: new Set(['ai-1']), liked: new Set(), recentlyShown: [], count: 50 });
