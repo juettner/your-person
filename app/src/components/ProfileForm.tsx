@@ -193,6 +193,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
                 <Button
                   title={locating ? 'Finding you...' : 'Use my location'}
                   variant="link"
+                  tone="card"
                   onPress={useMyLocation}
                   disabled={locating}
                   style={styles.inlineLink}

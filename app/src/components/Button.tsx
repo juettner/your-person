@@ -26,6 +26,8 @@ interface ButtonProps {
   style?: ViewStyle;
   /** For screen readers, when the title alone is not descriptive. */
   accessibilityLabel?: string;
+  /** Link variant only: where it sits. Links on the card use ink; links on the ground use onGround. */
+  tone?: 'ground' | 'card';
 }
 
 export function Button({
@@ -38,11 +40,13 @@ export function Button({
   busy = false,
   style,
   accessibilityLabel,
+  tone = 'ground',
 }: ButtonProps) {
   const p = usePalette();
   const inactive = disabled || busy;
 
   if (variant === 'link') {
+    const linkColor = tone === 'card' ? p.ink : p.onGround;
     return (
       <Pressable
         onPress={onPress}
@@ -51,7 +55,7 @@ export function Button({
         accessibilityLabel={accessibilityLabel ?? title}
         style={({ pressed }) => [styles.link, style, inactive && styles.inactive, pressed && styles.pressed]}
       >
-        <Text style={[styles.linkText, { color: p.onGround }]}>{title}</Text>
+        <Text style={[styles.linkText, { color: linkColor }]}>{title}</Text>
       </Pressable>
     );
   }
