@@ -6,8 +6,8 @@ This document explains what the system is made of and, more importantly, why. It
 
 ```
 +-------------------------------+        HTTPS / JSON        +---------------------------+
-|  app/  (Expo, React Native)   |  ----------------------->  |  api/  (NestJS, Node 22)  |
-|  iOS, Android, mobile web     |                            |  REST under /api          |
+|  ios/  (Swift, SwiftUI)       |  ----------------------->  |  api/  (NestJS, Node 22)  |
+|  iPhone                       |                            |  REST under /api          |
 +-------------------------------+                            +------------+--------------+
                                                                           |
                                                               ProfileRepository (port)
@@ -18,78 +18,26 @@ This document explains what the system is made of and, more importantly, why. It
 
 Two deployable units, one repo. The app never talks to the database; it only talks to the API.
 
-## Decision 1: one Expo codebase for iPhone, Android, and web
+## Decision 1: a native SwiftUI app for iPhone
 
 **Options considered**
 
 | Option | Pros | Cons |
 | --- | --- | --- |
-| Native Swift + Kotlin + separate web app | Best platform fidelity | Three codebases, three skill sets, three times the work for a simple app |
-| Flutter | One codebase, good performance | Dart is yet another language; web output is weaker for text-heavy UIs |
-| **Expo (React Native)** | One TypeScript codebase. First-class iOS and Android. Web via `react-native-web`. Huge ecosystem. Expo Application Services (EAS) builds and signs iOS apps in the cloud, so no Mac is required day to day. | Not every native API is available in the Expo Go sandbox; some features need a "development build" |
-| Progressive web app only | Simplest | Misses the stated goal of real iPhone and Android apps |
+| Expo (React Native) | One TypeScript codebase for iOS, Android and web | Every pixel goes through a bridge and a web-ish layout engine; animations, haptics and typography are always a translation of the native thing. The first version of this app was built this way. |
+| Flutter | One codebase, good performance | Dart, and its own widgets rather than the platform's |
+| **Swift + SwiftUI** | The real thing. Canvas, TimelineView, Core Haptics, the system font pipeline and the navigation stack are all first-party and all free. No dependencies at all. | iPhone only. A Mac with Xcode to build. |
 
-**Decision:** Expo. The app is text and buttons; it needs nothing exotic from the device. One codebase ships to all three targets in the order asked for.
+**Decision:** SwiftUI, iPhone only. The app is a page of handwriting and a handful of words; what matters is how it feels, and feel is where cross-platform layers charge their tax. Android and web can come later as their own apps if they are ever wanted; the API does not care.
 
 **What to know coming from Java**
 
-- React is a component model. A component is a function that takes `props` (think constructor arguments) and returns UI. State lives in hooks (`useState`, `useEffect`). There are no classes to speak of anymore.
-- React Native renders real native widgets (`View` is a `UIView` on iOS, a `ViewGroup` on Android, a `div` on web). Styling uses a subset of CSS expressed as JavaScript objects.
-- Colors come from a palette object provided through React Context (`components/ThemeProvider.tsx`); components call `usePalette()` and never hard-code a hex. Five papers live in `constants/theme.ts`, and the chosen one is remembered on the device. Spring analogy: a scoped bean that any component can have injected.
-- The look is one soft colour and a script hand, nothing else. See "The handwriting engine" below for how the words get written in front of you.
-- **Expo Router** is file-based navigation: every file under `src/app/` is a screen, and `_layout.tsx` files define the navigator around them. Think of it like Spring MVC mapping URLs to controllers by convention instead of annotations.
-- The app code is heavily commented. Start with `app/src/app/_layout.tsx` and follow the imports.
-
-## The handwriting engine
-
-The UI takes its shape from the app grug (Ocho, 2026 Apple Design Award): a
-plain sheet of colour with a line of handwriting that writes itself. grug
-draws its own hand-lettered caveman font. We do the same trick with a script
-hand instead: EMS Allure, which is the romantic script Allura (Rob Leuschke)
-traced as pen strokes by Sheldon B. Michaels and Windell H. Oskay for pen
-plotters. Both are under the SIL Open Font License. The TTF of Allura (via
-`@expo-google-fonts/allura`) carries all static text, so the written words and
-the typed words are the same design.
-
-**How it works.** A letter is not an outline, it is the path a pen took: a
-list of strokes, each a list of points, in drawing order. To show a finished
-letter you draw the whole path; to animate it you draw the path up to some
-length. The pieces, in `app/src/handwriting/`:
-
-1. `scripts/build-typeface.mjs` turns a single-line SVG font into
-   `typeface.json` (~46 KB): it parses each glyph's path, flattens curves
-   into short segments, flips y to point down, and simplifies each stroke
-   with Ramer-Douglas-Peucker. Glyphs keep their advance widths, which is
-   what lets a connected script join up.
-2. `typeface.ts` scales a glyph to a font size, exactly like a normal font
-   would (1000 units per em). Scaled glyphs are cached.
-3. `plan.ts` lays text out on lines and gives each letter a start time and a
-   duration: its path length divided by a pen speed in font units per
-   second, clamped so a dot is not instant and a flourished capital does not
-   drag. Longer, loopier letters take longer, which is what makes it feel
-   written rather than typed. A space is a short pause, a line break a longer
-   one, and `speed` scales all of it.
-4. `Handwriting.tsx` measures its width, builds the plan, and runs one
-   `requestAnimationFrame` clock throttled to 15-30 fps (grug's rule: fewer
-   frames for longer text; nobody can tell). Every frame derives each letter's
-   progress from that one number and renders the strokes as SVG paths. The
-   stroke being written right now uses the dash trick (`strokeDasharray` equal
-   to its length, `strokeDashoffset` the part not yet drawn); finished strokes
-   are plain paths; unstarted ones are skipped. When the clock passes the total
-   duration the loop stops and the component is static from then on.
-5. With `haptics` on, the phone ticks softly as the pen starts each word and
-   taps once when the line is finished (`expo-haptics`; nothing on web).
-   Tapping a word gives the same soft click. So you feel the writing as well
-   as see it.
-6. Reduce Motion (OS setting, or `prefers-reduced-motion` on web) skips the
-   animation and shows the finished text.
-
-Characters the artwork lacks (emoji, odd symbols) are drawn in the Allura
-font at the same spot so nothing silently disappears.
-
-**Java analogy.** The plan is a precomputed schedule; rendering is a pure
-function of (plan, elapsed). That is the same shape as building a query plan
-once and executing it per request. There are no per-letter timers to leak.
+- SwiftUI is a declarative component model like React, with the compiler doing the work: a `View` is a struct whose `body` describes the UI, and `@State` / `@StateObject` / `@EnvironmentObject` hold the state that makes it re-render. No classes to speak of for the UI itself.
+- There is no build system to learn: the Xcode project (`ios/YourPerson.xcodeproj`) is the equivalent of a Gradle or Maven file, and it has zero third-party dependencies. The folder on disk is the project; add a file and it is in the build.
+- `async/await` and `actor` are Swift's concurrency; `URLSession` plus `Codable` do what RestTemplate plus Jackson do, with field names mapped by convention (`API/Models.swift`).
+- Two stores live for the whole run and are injected through the environment (`YourPersonApp.swift`): which paper is on screen and which profile this phone uses. Spring analogy: application-scoped beans.
+- Navigation is a `NavigationStack`. Screens push and pop; the swipe-back gesture is free.
+- The app code is heavily commented. Start with `ios/YourPerson/YourPersonApp.swift` and follow the types.
 
 ## Decision 2: NestJS for the API
 
@@ -262,10 +210,9 @@ The app finds the API through `EXPO_PUBLIC_API_URL` (defaults to `http://localho
 | --- | --- | --- |
 | Selection logic | Vitest unit tests | `cd api && npm test` |
 | HTTP end to end, in-memory storage | Vitest + supertest | `cd api && npm run test:e2e` |
-| App type safety | TypeScript | `cd app && npm run typecheck` |
-| App builds for web | Expo export | `cd app && npm run export:web` |
+| App compiles | xcodebuild on a macOS runner | `cd ios && xcodebuild -scheme YourPerson -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO` |
 
 ## Deployment sketch (not built yet)
 
 - **API:** a container on any host (Fly.io, Render, Azure Container Apps, AWS App Runner). `npm run build` produces `dist/`; `node dist/main` runs it. MongoDB Atlas has a free tier.
-- **App:** EAS Build produces the iOS and Android binaries and EAS Submit pushes them to TestFlight and the Play Console. The web build is static files from `expo export --platform web`, hostable anywhere.
+- **App:** Xcode archives and uploads to TestFlight and the App Store (`docs/NATIVE-BUILDS.md`). The Release build setting `API_BASE_URL` points it at the deployed API.

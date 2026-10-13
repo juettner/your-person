@@ -5,8 +5,8 @@ Phases, not dates. Each phase should be shippable on its own.
 ## Phase 0: walking skeleton (this commit)
 
 - [x] NestJS API: profiles, curated question bank, selection with hide/like, in-memory and MongoDB storage
-- [x] Expo app: onboarding questionnaire, full-screen question cards with thumbs up/down, profile edit
-- [x] Runs on web with no infrastructure; iOS and Android via Expo Go
+- [x] App: onboarding questionnaire, one question at a time with thumbs up/down, profile edit (first as an Expo app, since rebuilt natively)
+- [x] Runs against an in-memory API with no infrastructure
 - [x] Index Card look with five selectable palettes (replaced by the Hand look)
 - [x] Deep interests: per-interest follow-up cards in onboarding, answers feed templated questions
 - [x] Location as a place name, "Around town" interest, local follow-ups and city questions
@@ -14,13 +14,14 @@ Phases, not dates. Each phase should be shippable on its own.
 - [x] Gottman-inspired cards: appreciation, bids, dreams, evening mode, rituals
 - [x] Memories ("what they said"), Not now, dates that matter, weekly nudge, shorter onboarding
 - [x] The Letter look: one soft colour, a script hand, the question writes itself with haptic ticks (grug's idea, our own hand)
+- [x] Rebuilt as a native SwiftUI iPhone app: Canvas handwriting, system haptics, no dependencies
 - [ ] Turn the engine on with a real key and read a few decks critically; tune the system prompt from what comes back
-- [ ] Try it on a real phone with Expo Go and fix what feels wrong
+- [ ] Run it on a real iPhone from Xcode and tune the pen speed and haptics by hand
 
 ## Phase 1: make it real
 
 - Deploy the API with MongoDB Atlas
-- EAS Build for iOS (TestFlight) and Android (internal testing track)
+- TestFlight build from Xcode
 - App icon, splash screen, a name that is not a working title
 - Error states and empty states polished (no API reachable, no questions left)
 - Simple rate limiting on the API
@@ -44,7 +45,7 @@ Phases, not dates. Each phase should be shippable on its own.
 
 - Optional weekly nudge notification, off by default
 - "Questions you both loved" history
-- Widgets (iOS home screen, Android)
+- A home screen widget with today's question
 
 ## Known debt
 

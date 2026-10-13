@@ -72,13 +72,9 @@ After any question, one line: "What did Sam say?" Those memories live on their o
 - AI-generated questions. The bank is hand-written on purpose so quality is controlled. The API is shaped so an LLM source can slot in later.
 - Analytics, sharing, social features.
 
-## Platforms and order
+## Platforms
 
-1. iPhone
-2. Android
-3. Web, designed for a phone screen
-
-All three come from one Expo codebase. See `ARCHITECTURE.md` for why.
+iPhone, natively, in SwiftUI. The first version was a cross-platform Expo app; it was rebuilt because this app lives or dies on feel, and feel is what cross-platform layers tax. Android or web can come later as their own apps against the same API. See `ARCHITECTURE.md` for the decision.
 
 ## Open product questions
 
