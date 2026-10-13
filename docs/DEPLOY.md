@@ -45,16 +45,15 @@ The `api/Dockerfile` is plain: `docker build -t your-person-api api && docker ru
 
 ## 3. Point the app at it
 
-- For Expo Go and simulators: `app/.env` with `EXPO_PUBLIC_API_URL=https://<your-host>`.
-- For EAS builds: replace `https://REPLACE-WITH-YOUR-API-HOST` in `app/eas.json` under the `preview` and `production` profiles.
-- Then `npx expo start` or `eas build` as usual.
+- In Xcode, target YourPerson > Build Settings > User-Defined > `API_BASE_URL`: set the Release value to `https://<your-host>` (and the Debug value too if you want the simulator to use the deployed API).
+- Then Run or Archive as usual (`docs/NATIVE-BUILDS.md`).
 
 ## What is in place for production
 
 - The Docker image is two-stage, runs as a non-root user, and holds only compiled output and production dependencies.
 - `GET /api/health` reports storage and AI status and is used as the health check.
 - Rate limiting: 60 requests per minute per client IP, with `trust proxy` so the limit applies to the real client behind the host's load balancer.
-- CORS is open by default; set `CORS_ORIGIN=https://your-web-host` to narrow it once the web build has a home.
+- CORS is open by default; the iPhone app does not need it, so set `CORS_ORIGIN` to something harmless if you want to close it.
 - No authentication yet. The profile UUID is the only credential, so do not share profile links. Accounts are phase 2 in `ROADMAP.md`.
 
 ## Rollback

@@ -24,9 +24,13 @@ The user is one half of the couple. They set up a profile *about* their person. 
 
 | Screen | Purpose | Notes |
 | --- | --- | --- |
-| **Onboarding** | Set up the partner profile | A short stack of index cards. Card 1: name, pick interests from chips, one free-text box: "What's going on in their world lately?" Then one card per chosen interest that goes deeper: Sports asks which sport, then which team, then fan or player; Music asks genres, then artists, then live shows or headphones. Every deeper answer is optional. |
-| **Today** | Show questions | One question on a card. Big text. "Ask Sam" at the top. "Nope" hides it, "Good one" keeps it coming back, "Next card" advances. Three per batch, then deal three more. |
-| **Profile** | Update the profile and pick a look | Same cards as onboarding, pre-filled. Save from the first card or walk into the details. Five color palettes to choose from. |
+| **Onboarding** | Set up the partner profile | A few handwritten pages. Page 1: name, circle interests from a list of words, one line: "What's going on in their world right now?" Then one page per chosen interest that goes deeper: Sports asks which sport, then which team, then fan or player; Music asks genres, then artists, then live shows or headphones. Every deeper answer is optional. |
+| **Today** | Show questions | A sheet of soft colour, like a letter. "Ask Sam." in the corner, and the question writes itself across the middle of the screen in a script hand, with a soft tick under your finger as each word starts. "Nope" hides it, "Good one" keeps it coming back, "Next" advances. Three per batch, then deal three more. |
+| **Profile** | Update the profile and pick a paper | Same pages as onboarding, pre-filled. Save from the first page or walk into the details. Five papers to choose from: linen, blush, sage, dusk, wine. |
+
+### The look
+
+The shape comes from grug (Ocho, Apple Design Award 2026): a single colour, handwritten type, nothing else. The feel is a letter rather than a cave wall: a romantic script (Allura) on warm papers, written in front of you one letter at a time, with the phone ticking softly as the pen moves. No cards, borders, shadows, icons or buttons; actions are underlined words, chosen things are circled. `docs/ARCHITECTURE.md`, "The handwriting engine", explains how the writing animation works.
 
 ### Where they live
 
@@ -68,13 +72,9 @@ After any question, one line: "What did Sam say?" Those memories live on their o
 - AI-generated questions. The bank is hand-written on purpose so quality is controlled. The API is shaped so an LLM source can slot in later.
 - Analytics, sharing, social features.
 
-## Platforms and order
+## Platforms
 
-1. iPhone
-2. Android
-3. Web, designed for a phone screen
-
-All three come from one Expo codebase. See `ARCHITECTURE.md` for why.
+iPhone, natively, in SwiftUI. The first version was a cross-platform Expo app; it was rebuilt because this app lives or dies on feel, and feel is what cross-platform layers tax. Android or web can come later as their own apps against the same API. See `ARCHITECTURE.md` for the decision.
 
 ## Open product questions
 

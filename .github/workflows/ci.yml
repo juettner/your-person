@@ -1,5 +1,6 @@
-# Runs on every push and pull request: the API's lint, tests and build, and
-# the app's typecheck, lint and web export. No secrets needed.
+# Runs on every push and pull request: the API's lint, tests and build on
+# Linux, and the iPhone app compiled for the simulator on a Mac runner.
+# No secrets needed; the iOS job builds unsigned.
 name: CI
 
 on:
@@ -23,17 +24,20 @@ jobs:
       - run: npm run test:e2e
       - run: npm run build
 
-  app:
-    runs-on: ubuntu-latest
+  ios:
+    runs-on: macos-15
     defaults:
       run:
-        working-directory: app
+        working-directory: ios
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm ci --legacy-peer-deps
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run export:web
+      - name: Build for the simulator
+        run: |
+          xcodebuild -version
+          xcodebuild \
+            -project YourPerson.xcodeproj \
+            -scheme YourPerson \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            build

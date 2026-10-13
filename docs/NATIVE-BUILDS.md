@@ -1,86 +1,84 @@
-# Native builds for iPhone and Android
+# Running it on your iPhone
 
-Short version: yes. Expo apps *are* native apps. React Native renders real
-platform widgets (a `View` is a `UIView` on iOS and a `ViewGroup` on
-Android), and the output of a build is an ordinary `.ipa` or `.apk`/`.aab`
-that goes through TestFlight and the Play Store like any other app.
+The app is a plain Xcode project with no dependencies: open it, pick a
+destination, press Run. This page covers the three destinations (simulator,
+your own phone, TestFlight) and the one setting that trips people up: where
+the API is.
 
-What Expo changes is *how you build*: the native Xcode and Android Studio
-projects are generated from `app.json` on demand instead of being checked in
-("Continuous Native Generation"), and EAS Build can run those builds in the
-cloud, so you do not need a Mac on your desk to ship an iPhone app.
+## Where the API is
 
-## Three ways to run the app on a phone
+The app reads its API address from the `API_BASE_URL` build setting
+(target YourPerson > Build Settings > User-Defined; it lands in Info.plist as
+`APIBaseURL`).
 
-| | What it is | When to use it |
+| Configuration | Default | Use |
 | --- | --- | --- |
-| **Expo Go** | Expo's own app from the App Store / Play Store. Loads your JavaScript over the network. | Day one. `npm start`, scan the QR code, done. Enough for everything in this app today. |
-| **Development build** | Your app, built natively, with the dev tools baked in. Still loads JS live. | Once you add a library with native code that Expo Go does not bundle (push notifications, in-app purchases, widgets). |
-| **Production build** | The real thing, signed, ready for TestFlight or the Play Store. | Shipping. |
+| Debug | `http://localhost:3000` | Simulator talking to `npm run start:dev` on the same Mac |
+| Release | `https://REPLACE-WITH-YOUR-API-HOST` | Archive / TestFlight. Replace with the deployed API (`docs/DEPLOY.md`) |
 
-Development and production builds come from the same command with a different profile. The profiles live in `app/eas.json`.
+A physical phone cannot reach your Mac's `localhost`. For development on the
+device, set the Debug value to your Mac's LAN address, for example
+`http://192.168.1.23:3000`, and keep both on the same Wi-Fi. Guest and
+corporate networks often block phone-to-laptop traffic; if the app says it
+can't reach the server, that is the first thing to check.
 
-## One-time setup
+Plain `http://` to a LAN address is allowed because Info.plist sets
+`NSAllowsLocalNetworking`. Anything off the local network must be https.
 
-1. **Accounts**
-   - Expo account (free): `npx eas-cli@latest login`
-   - Apple Developer Program: 99 USD per year. Required for TestFlight and the App Store, and for any build that runs on a physical iPhone for more than a week.
-   - Google Play Console: 25 USD, once.
-2. **Identifiers.** `app.json` already sets `ios.bundleIdentifier` and `android.package` to `com.juettner.yourperson`. Change them before the first build if you want a different reverse-DNS name; they are hard to change afterwards.
-3. **Link the project:** `npx eas-cli@latest init` from `app/`. It writes a project id into `app.json`.
-4. **Credentials.** The first `eas build` offers to create and store the iOS signing certificates and the Android keystore for you. Say yes. You never have to touch Xcode's signing screen.
-
-## Building
-
-All commands run from `app/`.
+## 1. Simulator
 
 ```bash
-# iPhone, installable on your own devices via a link (needs their UDIDs registered; eas walks you through it)
-npx eas-cli@latest build --platform ios --profile preview
-
-# Android APK you can sideload or share
-npx eas-cli@latest build --platform android --profile preview
-
-# Both, for the stores
-npx eas-cli@latest build --platform all --profile production
-
-# Upload to TestFlight / Play Console
-npx eas-cli@latest submit --platform ios
-npx eas-cli@latest submit --platform android
+cd api && npm install --legacy-peer-deps && npm run start:dev
+open ios/YourPerson.xcodeproj
 ```
 
-Builds take 10 to 20 minutes in the cloud. The free tier includes a limited number per month; paid tiers raise it.
+Choose any iPhone simulator, press Run (⌘R). The handwriting animation runs
+in the simulator; haptics do not, since the simulator has no Taptic Engine.
 
-**Point the build at a real API.** The `preview` and `production` profiles set `EXPO_PUBLIC_API_URL`. Replace the placeholder with wherever the API is deployed (`docs/ARCHITECTURE.md`, "Deployment sketch"). A phone cannot reach `localhost`.
+## 2. Your own iPhone
 
-## Building from GitHub instead of your laptop
+1. Plug the phone in (or pair it over Wi-Fi in Xcode's Devices window).
+2. In the project, select the YourPerson target > Signing & Capabilities,
+   tick "Automatically manage signing", and pick your Team. A free Apple ID
+   works: Xcode makes a personal team for it. Builds signed that way expire
+   after seven days; the paid Apple Developer Program ($99/year) removes the
+   limit and is required for TestFlight.
+3. Set `API_BASE_URL` for Debug to your Mac's LAN address (above).
+4. Select the phone as the destination and Run. The first time, the phone
+   asks you to trust the developer certificate under Settings > General >
+   VPN & Device Management.
 
-`.github/workflows/eas-build.yml` runs the same `eas build` on GitHub's machines. One-time setup: run `npx eas-cli@latest init` in `app/` once (it writes the project id into `app.json`; commit it), create an access token in your Expo account settings, and add it to the repo as the secret `EXPO_TOKEN`. Then start the workflow from the Actions tab, pick iOS and `preview`, and EAS emails you a link to install the build on your phone when it finishes.
+Everything should be judged on the device, not the simulator: the pen speed,
+the tick per word, the tap at the end of a line, and how the script reads at
+arm's length.
 
-`.github/workflows/ci.yml` runs the API and app checks on every push with no secrets.
+## 3. TestFlight
 
-## What has been verified without a Mac
+1. Join the Apple Developer Program and set your Team under Signing &
+   Capabilities.
+2. Set `API_BASE_URL` for Release to the deployed API.
+3. Product > Archive, then Distribute App > TestFlight & App Store. Xcode
+   uploads the build; App Store Connect emails you when it is ready to test.
+4. Add testers in App Store Connect > TestFlight. They install through the
+   TestFlight app.
 
-`npx expo prebuild --platform ios` generates the Xcode project cleanly from `app.json`: display name "Your Person", bundle identifier `com.juettner.yourperson`, and the location permission text land in `Info.plist`. That is the same step EAS runs first on its build machines. What has not been run here is the actual compile and signing, which needs Apple's toolchain.
+The bundle identifier is `com.juettner.yourperson` (`ios/YourPerson.xcodeproj`).
+Change it before the first upload if you want a different one; it cannot be
+changed afterwards.
 
-## Building locally instead
+## What CI checks
 
-If you would rather see the native projects, or build on your own machine:
+`.github/workflows/ci.yml` compiles the app for the simulator on a macOS
+runner on every push, unsigned, so a broken build is caught without a Mac in
+the loop. It does not run on a device and cannot judge feel.
 
-```bash
-npx expo prebuild          # generates ios/ and android/ from app.json
-npx expo run:ios           # needs a Mac with Xcode
-npx expo run:android       # needs Android Studio + an emulator or device
-```
+## Changing the handwriting
 
-`ios/` and `android/` are gitignored on purpose. Treat them as build output: change `app.json` or a config plugin, not the generated files, or the next prebuild overwrites your edits.
-
-## Over-the-air updates
-
-Once a native build is installed, JavaScript-only changes (which is nearly everything in this app) can ship without a store review:
-
-```bash
-npx eas-cli@latest update --branch production --message "Reworded three questions"
-```
-
-Anything that changes native code or `app.json` still needs a new build.
+- The pen's pace is `unitsPerSecond` in `ios/YourPerson/Handwriting/TextPlan.swift`,
+  and each `HandwritingView` can pass `speed:` to scale it.
+- Haptics are the `haptics:` flag on `HandwritingView` (ticks per word, a tap
+  at the end) plus the click in `Word`. Both live in `Handwriting/Haptics.swift`.
+- To change the hand, run `ios/scripts/build-typeface.mjs` on another
+  single-line SVG font (Inkscape's Hershey Text extension ships a dozen under
+  the SIL Open Font License) and drop the matching TTF into `Resources/`,
+  registering it in `Info.plist` under `UIAppFonts` and in `Theme/Typography.swift`.
