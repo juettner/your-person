@@ -1,24 +1,25 @@
 /**
- * Edit the partner profile: the cards, dates that matter, the weekly nudge,
- * the look, and the way to "what they said".
+ * Edit the partner profile: the pages, dates that matter, the weekly nudge,
+ * the paper, and the way to "what they said".
  */
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Switch, Text, View } from 'react-native';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { Platform, StyleSheet, View } from 'react-native';
 import { DatesEditor } from '@/components/DatesEditor';
+import { Hand } from '@/components/Hand';
 import { ProfileForm } from '@/components/ProfileForm';
 import { Screen } from '@/components/Screen';
-import { ThemePicker } from '@/components/ThemePicker';
-import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Spacing } from '@/constants/theme';
+import { useTheme } from '@/components/ThemeProvider';
+import { Thinking } from '@/components/Thinking';
+import { Word } from '@/components/Word';
+import { WordChoice } from '@/components/WordChoice';
+import { Spacing, THEMES, ThemeId } from '@/constants/theme';
 import { api, describeError, ImportantDate, Profile, ProfileInput } from '@/lib/api';
 import { clearProfileId, getProfileId } from '@/lib/profile-store';
 import { applyReminder, DEFAULT_REMINDER, loadReminder, ReminderSetting, WEEKDAYS } from '@/lib/reminders';
 
 export default function ProfileScreen() {
-  const p = usePalette();
+  const { themeId, setThemeId } = useTheme();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dates, setDates] = useState<ImportantDate[]>([]);
@@ -66,8 +67,8 @@ export default function ProfileScreen() {
     if (enabled && !on) {
       setReminderNote(
         Platform.OS === 'web'
-          ? 'Reminders work in the phone app, not in the browser.'
-          : 'Could not schedule it here. Reminders need the installed app and notification permission.',
+          ? 'reminders work in the phone app, not in the browser.'
+          : 'could not schedule it here. reminders need the installed app and notification permission.',
       );
     } else {
       setReminderNote(null);
@@ -91,8 +92,8 @@ export default function ProfileScreen() {
       const res = await api.generate(profile.id);
       setAiNote(
         res.enabled
-          ? `Wrote ${res.generated} new question${res.generated === 1 ? '' : 's'} for ${profile.name}.`
-          : 'AI questions are switched off on this server.',
+          ? `wrote ${res.generated} new question${res.generated === 1 ? '' : 's'} for ${profile.name}.`
+          : 'ai questions are switched off on this server.',
       );
       const fresh = await api.getProfile(profile.id);
       setProfile(fresh);
@@ -106,12 +107,19 @@ export default function ProfileScreen() {
   const header = (
     <View style={styles.header}>
       <View style={styles.headerRow}>
-        <Button title="Back" variant="link" onPress={() => router.back()} />
-        <Button title="What they said" variant="link" onPress={() => router.push('/memories')} />
+        <Word title="back" size="small" onPress={() => router.back()} />
+        <Word title="what they said" size="small" onPress={() => router.push('/memories')} />
       </View>
-      <View style={styles.themeBlock}>
-        <Text style={[styles.sectionLabel, { color: p.onGround }]}>Look</Text>
-        <ThemePicker />
+      <View style={styles.section}>
+        <Hand size="small" tone="muted">
+          paper
+        </Hand>
+        <WordChoice
+          options={THEMES.map((t) => ({ id: t.id, label: t.name }))}
+          selected={[themeId]}
+          multi={false}
+          onChange={(ids) => ids[0] && setThemeId(ids[0] as ThemeId)}
+        />
       </View>
     </View>
   );
@@ -120,7 +128,9 @@ export default function ProfileScreen() {
     return (
       <Screen>
         {header}
-        <Text style={[styles.error, { color: p.danger }]}>{error}</Text>
+        <Hand tone="muted" style={styles.spaced}>
+          {error}
+        </Hand>
       </Screen>
     );
   }
@@ -129,70 +139,87 @@ export default function ProfileScreen() {
     return (
       <Screen>
         {header}
-        <ActivityIndicator color={p.onGround} style={styles.spinner} />
+        <View style={styles.spaced}>
+          <Thinking />
+        </View>
       </Screen>
     );
   }
+
+  const hour12 = reminder.hour > 12 ? reminder.hour - 12 : reminder.hour;
+  const ampm = reminder.hour >= 12 ? 'pm' : 'am';
 
   return (
     <Screen>
       <ProfileForm
         mode="edit"
-        title="Your person."
+        title="your person."
         initial={profile}
-        submitLabel="Save"
+        submitLabel="save"
         onSubmit={save}
         header={header}
         afterCard={
           <>
-            <Text style={[styles.sectionLabel, { color: p.onGround }]}>Dates that matter</Text>
-            <Card contentStyle={styles.sectionCard}>
+            <View style={styles.section}>
+              <Hand size="small" tone="muted">
+                dates that matter
+              </Hand>
               <DatesEditor dates={dates} onChange={setDates} />
-            </Card>
+            </View>
 
-            <Text style={[styles.sectionLabel, { color: p.onGround }]}>Weekly nudge</Text>
-            <Card contentStyle={styles.sectionCard}>
-              <View style={styles.switchRow}>
-                <View style={styles.switchText}>
-                  <Text style={[styles.switchTitle, { color: p.ink }]}>Remind me once a week</Text>
-                  <Text style={[styles.switchHint, { color: p.muted }]}>
-                    {WEEKDAYS[reminder.weekday - 1]}s at {reminder.hour > 12 ? reminder.hour - 12 : reminder.hour}
-                    {reminder.hour >= 12 ? 'pm' : 'am'}. Off by default, on purpose.
-                  </Text>
-                </View>
-                <Switch
-                  value={reminder.enabled}
-                  onValueChange={toggleReminder}
-                  accessibilityLabel="Weekly reminder"
-                  trackColor={{ true: p.accent, false: p.muted }}
+            <View style={styles.section}>
+              <Hand size="small" tone="muted">
+                weekly nudge
+              </Hand>
+              <View style={styles.reminderRow}>
+                <Hand style={styles.reminderText}>remind me once a week</Hand>
+                <WordChoice
+                  options={[
+                    { id: 'on', label: 'on' },
+                    { id: 'off', label: 'off' },
+                  ]}
+                  selected={[reminder.enabled ? 'on' : 'off']}
+                  multi={false}
+                  size="small"
+                  onChange={(ids) => ids[0] && toggleReminder(ids[0] === 'on')}
                 />
               </View>
-              <Button title="Change the day" variant="link" tone="card" onPress={cycleWeekday} style={styles.inlineLink} />
-              {reminderNote && <Text style={[styles.note, { color: p.muted }]}>{reminderNote}</Text>}
-            </Card>
+              <Hand size="small" tone="muted">
+                {`${WEEKDAYS[reminder.weekday - 1].toLowerCase()}s at ${hour12}${ampm}. off by default, on purpose.`}
+              </Hand>
+              <Word title="change the day" variant="quiet" size="small" onPress={cycleWeekday} />
+              {reminderNote && (
+                <Hand size="small" tone="muted">
+                  {reminderNote}
+                </Hand>
+              )}
+            </View>
           </>
         }
         footer={
-          <>
+          <View style={styles.footer}>
             {profile.hiddenCount > 0 && (
-              <Text style={[styles.hint, { color: p.onGround }]}>
-                You&apos;ve hidden {profile.hiddenCount} question{profile.hiddenCount === 1 ? '' : 's'}.
-              </Text>
+              <Hand size="small" tone="muted">
+                you&apos;ve hidden {profile.hiddenCount} question{profile.hiddenCount === 1 ? '' : 's'}.
+              </Hand>
             )}
             {profile.aiQuestionCount > 0 && (
-              <Text style={[styles.hint, { color: p.onGround }]}>
+              <Hand size="small" tone="muted">
                 {profile.aiQuestionCount} question{profile.aiQuestionCount === 1 ? '' : 's'} written just for {profile.name}.
-              </Text>
+              </Hand>
             )}
-            <Button
-              title={generating ? 'Writing...' : 'Write new AI questions'}
-              variant="outline"
-              onPress={refreshAi}
-              disabled={generating}
-            />
-            {aiNote && <Text style={[styles.hint, { color: p.onGround }]}>{aiNote}</Text>}
-            <Button title="Start over with a new profile" variant="link" onPress={startOver} style={styles.centerLink} />
-          </>
+            <Word title={generating ? 'writing...' : 'write new ai questions'} size="small" onPress={refreshAi} disabled={generating} />
+            {aiNote && (
+              <Hand size="small" tone="muted">
+                {aiNote}
+              </Hand>
+            )}
+            <Word title="start over with a new profile" variant="quiet" size="small" onPress={startOver} />
+            {/* Required by the typeface license, and deserved. */}
+            <Hand size="small" tone="muted" style={styles.credit}>
+              the handwriting is grug hand, by jip van der velde and michel elings. handdrawn.software
+            </Hand>
+          </View>
         }
       />
     </Screen>
@@ -200,19 +227,12 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: Spacing.sm },
+  header: { gap: Spacing.md },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  themeBlock: { gap: Spacing.sm, paddingVertical: Spacing.sm },
-  sectionLabel: { fontFamily: Fonts.bold, fontSize: 15 },
-  sectionCard: { gap: Spacing.sm, padding: Spacing.md + 4 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  switchText: { flex: 1, gap: 2 },
-  switchTitle: { fontFamily: Fonts.bold, fontSize: 16 },
-  switchHint: { fontFamily: Fonts.medium, fontSize: 13, lineHeight: 18 },
-  inlineLink: { alignSelf: 'flex-start', minHeight: 36 },
-  note: { fontFamily: Fonts.medium, fontSize: 13 },
-  hint: { fontFamily: Fonts.medium, textAlign: 'center', fontSize: 14 },
-  centerLink: { alignSelf: 'center' },
-  error: { fontFamily: Fonts.bold, fontSize: 16, marginTop: Spacing.md },
-  spinner: { marginTop: Spacing.xxl },
+  section: { gap: Spacing.sm },
+  reminderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md },
+  reminderText: { flex: 1 },
+  footer: { gap: Spacing.sm, marginTop: Spacing.md },
+  credit: { marginTop: Spacing.lg },
+  spaced: { marginTop: Spacing.xl },
 });

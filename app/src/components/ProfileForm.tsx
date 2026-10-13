@@ -1,54 +1,50 @@
 /**
- * The partner questionnaire as a short stack of index cards.
+ * The partner questionnaire as a few pages of handwriting.
  *
- *   Card 1          name, interests, "lately"
- *   Card 2..N       one per selected interest, with that interest's follow-ups
- *                   ("Which sport?" -> "Which team?"), as served by the API
+ *   Page 1          name, interests, "lately"
+ *   Page 2..N       one per selected interest, with that interest's follow-ups
+ *                   ("which sport?" -> "which team?"), as served by the API
  *
- * Used by onboarding (empty, must walk every card) and the profile screen
- * (pre-filled; can save from the first card or walk the cards to edit details).
+ * Used by onboarding (empty, must walk every page) and the profile screen
+ * (pre-filled; can save from the first page or walk the pages to edit details).
  *
  * Form state is plain `useState`. The whole thing is one component because the
- * cards share state; splitting it would mean lifting that state right back up.
+ * pages share state; splitting it would mean lifting that state right back up.
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { FollowUpFields } from '@/components/FollowUpFields';
-import { InterestChips } from '@/components/InterestChips';
+import { Hand } from '@/components/Hand';
+import { HandInput } from '@/components/HandInput';
 import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { Thinking } from '@/components/Thinking';
+import { Word } from '@/components/Word';
+import { WordChoice } from '@/components/WordChoice';
+import { HandSize, Spacing } from '@/constants/theme';
+import { Handwriting } from '@/handwriting/Handwriting';
 import { api, describeError, Interest, InterestDetails, ProfileInput, ProfileLocation } from '@/lib/api';
 import { detectLocation } from '@/lib/location';
 
-/** How many follow-ups per interest the onboarding cards show. */
+/** How many follow-ups per interest the onboarding pages show. */
 const ONBOARDING_FOLLOW_UPS = 2;
+/** How many interests show before "+n more". */
+const VISIBLE_INTERESTS = 12;
 
 interface ProfileFormProps {
   initial?: ProfileInput;
-  /** Label on the final card's button ("Deal me in", "Save"). */
+  /** Label on the final page's action ("deal me in", "save"). */
   submitLabel: string;
   /** Called with the cleaned-up values. Throw to show an error; resolve to finish. */
   onSubmit: (values: ProfileInput) => Promise<void>;
-  /** `create` walks every card; `edit` can save from the first card. */
+  /** `create` walks every page; `edit` can save from the first page. */
   mode: 'create' | 'edit';
-  /** Title for the first card. Deeper cards are titled by their interest. */
+  /** Title for the first page. Deeper pages are titled by their interest. */
   title: string;
-  /** Rendered above the first card only (back link, theme picker). */
+  /** Rendered above the first page only (back link, paper picker). */
   header?: ReactNode;
-  /** Rendered under the buttons on the first card only. */
+  /** Rendered under the actions on the first page only. */
   footer?: ReactNode;
-  /** Rendered between the first card and its buttons (dates, reminders). */
+  /** Rendered between the first page's fields and its actions (dates, reminders). */
   afterCard?: ReactNode;
 }
 
@@ -60,7 +56,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
   const [currentFocus, setCurrentFocus] = useState(initial?.currentFocus ?? '');
   const [details, setDetails] = useState<InterestDetails>(initial?.interestDetails ?? {});
   // Location is kept as a place name. `city` is what the user sees and edits;
-  // region/country ride along from "Use my location" when available.
+  // region/country ride along from "use my location" when available.
   const [location, setLocation] = useState<ProfileLocation | null>(initial?.location ?? null);
   const [locating, setLocating] = useState(false);
   const [locationNote, setLocationNote] = useState<string | null>(null);
@@ -87,7 +83,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
     };
   }, []);
 
-  // The deeper cards: selected interests that have follow-ups, in taxonomy order.
+  // The deeper pages: selected interests that have follow-ups, in taxonomy order.
   // useMemo recomputes only when its inputs change.
   const detailSteps = useMemo(
     () => (options ?? []).filter((i) => interests.includes(i.id) && i.followUps.length > 0),
@@ -129,34 +125,30 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
     if (result.status === 'ok') {
       setLocation(result.location);
     } else if (result.status === 'denied') {
-      setLocationNote('Location permission was turned down. You can type the city instead.');
+      setLocationNote('location permission was turned down. you can write the city instead.');
     } else {
-      setLocationNote("Couldn't work out a city here. Type it in instead.");
+      setLocationNote("couldn't work out a city here. write it in instead.");
     }
     setLocating(false);
   };
-
-  const inputStyle = [styles.input, { color: p.ink, borderColor: p.ink, backgroundColor: p.card }];
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {step === 0 && header}
 
-        {/* Step chip + title. The chip doubles as the progress indicator. */}
+        {/* Page number and title. The title writes itself each time the page changes. */}
         <View style={styles.titleBlock}>
-          <View style={[styles.stepChip, { backgroundColor: p.accent }]}>
-            <Text style={[styles.stepText, { color: p.onAccent }]}>
-              {`STEP ${step + 1} OF ${totalSteps} · ${(current ? current.label : 'Your person').toUpperCase()}`}
-            </Text>
-          </View>
-          <Text style={[styles.title, { color: p.onGround }]} accessibilityRole="header">
-            {current ? `${current.label}.` : title}
-          </Text>
+          {totalSteps > 1 && (
+            <Hand size="small" tone="muted">
+              {`${step + 1} of ${totalSteps}`}
+            </Hand>
+          )}
+          <Handwriting key={step} text={current ? `${current.label.toLowerCase()}.` : title} color={p.ink} size={HandSize.title} />
         </View>
 
         {current ? (
-          <Card contentStyle={styles.card}>
+          <View style={styles.fields}>
             <FollowUpFields
               // Keep onboarding short: the first two follow-ups now, the rest from the profile screen.
               interest={mode === 'create' ? { ...current, followUps: current.followUps.slice(0, ONBOARDING_FOLLOW_UPS) } : current}
@@ -164,110 +156,116 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
               onChange={(answers) => setDetails((d) => ({ ...d, [current.id]: answers }))}
             />
             {mode === 'create' && current.followUps.length > ONBOARDING_FOLLOW_UPS && (
-              <Text style={[styles.moreLater, { color: p.muted }]}>
-                {current.followUps.length - ONBOARDING_FOLLOW_UPS} more on the profile screen, whenever.
-              </Text>
+              <Hand size="small" tone="muted">
+                {current.followUps.length - ONBOARDING_FOLLOW_UPS} more on the profile page, whenever.
+              </Hand>
             )}
-          </Card>
+          </View>
         ) : (
-          <Card contentStyle={styles.card}>
+          <View style={styles.fields}>
             <View style={styles.field}>
-              <Text style={[styles.label, { color: p.ink }]}>Name</Text>
-              <TextInput
+              <Hand size="small" tone="muted">
+                name
+              </Hand>
+              <HandInput
                 value={name}
                 onChangeText={setName}
-                placeholder="Sam"
-                placeholderTextColor={p.muted}
-                autoCapitalize="words"
+                placeholder="sam"
+                autoCapitalize="none"
                 autoCorrect={false}
                 maxLength={60}
-                style={inputStyle}
                 accessibilityLabel="Their name"
               />
             </View>
 
             <View style={styles.field}>
-              <Text style={[styles.label, { color: p.ink }]}>Where they live</Text>
-              <TextInput
+              <Hand size="small" tone="muted">
+                where they live
+              </Hand>
+              <HandInput
                 value={location?.city ?? ''}
                 // Typing replaces any detected region/country: we can't trust them for a new city.
                 onChangeText={(city) => setLocation(city ? { city } : null)}
-                placeholder="Minneapolis"
-                placeholderTextColor={p.muted}
-                autoCapitalize="words"
+                placeholder="minneapolis"
+                autoCapitalize="none"
                 autoCorrect={false}
                 maxLength={80}
-                style={inputStyle}
                 accessibilityLabel="Where they live"
               />
               <View style={styles.inlineRow}>
-                <Button
-                  title={locating ? 'Finding you...' : 'Use my location'}
-                  variant="link"
-                  tone="card"
-                  onPress={useMyLocation}
-                  disabled={locating}
-                  style={styles.inlineLink}
-                />
+                <Word title={locating ? 'finding you...' : 'use my location'} variant="quiet" size="small" onPress={useMyLocation} disabled={locating} />
                 {location?.region ? (
-                  <Text style={[styles.note, { color: p.muted }]}>{[location.region, location.country].filter(Boolean).join(', ')}</Text>
+                  <Hand size="small" tone="muted">
+                    {[location.region, location.country].filter(Boolean).join(', ').toLowerCase()}
+                  </Hand>
                 ) : null}
               </View>
-              {locationNote && <Text style={[styles.note, { color: p.muted }]}>{locationNote}</Text>}
-            </View>
-
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: p.ink }]}>Into</Text>
-              {options ? (
-                <InterestChips interests={options} selected={interests} onChange={setInterests} />
-              ) : loadError ? (
-                <Text style={[styles.error, { color: p.ink }]}>{loadError}</Text>
-              ) : (
-                <ActivityIndicator color={p.ink} />
+              {locationNote && (
+                <Hand size="small" tone="muted">
+                  {locationNote}
+                </Hand>
               )}
             </View>
 
             <View style={styles.field}>
-              <Text style={[styles.label, { color: p.ink }]}>Lately</Text>
-              <TextInput
+              <Hand size="small" tone="muted">
+                into
+              </Hand>
+              {options ? (
+                <WordChoice
+                  options={options.map((o) => ({ id: o.id, label: o.label.toLowerCase() }))}
+                  selected={interests}
+                  multi
+                  limit={VISIBLE_INTERESTS}
+                  onChange={setInterests}
+                />
+              ) : loadError ? (
+                <Hand tone="muted">{loadError}</Hand>
+              ) : (
+                <Thinking />
+              )}
+            </View>
+
+            <View style={styles.field}>
+              <Hand size="small" tone="muted">
+                lately
+              </Hand>
+              <HandInput
                 value={currentFocus}
                 onChangeText={setCurrentFocus}
-                placeholder="What's going on in their world right now?"
-                placeholderTextColor={p.muted}
+                placeholder="what's going on in their world right now?"
                 multiline
                 maxLength={500}
-                style={[...inputStyle, styles.multiline]}
                 accessibilityLabel="What is going on in their world lately"
               />
             </View>
-          </Card>
+          </View>
         )}
 
         {step === 0 && afterCard}
 
-        {submitError && <Text style={[styles.error, { color: p.danger }]}>{submitError}</Text>}
+        {submitError && <Hand tone="muted">{submitError}</Hand>}
 
         <View style={styles.actions}>
-          {/* Edit mode, first card: save right away, or walk into the details. */}
+          {/* Edit mode, first page: save right away, or walk into the details. */}
           {mode === 'edit' && step === 0 ? (
             <>
-              <Button title={submitLabel} onPress={submit} disabled={!canSubmit} busy={submitting} />
-              {detailSteps.length > 0 && (
-                <Button title="Edit details" variant="outline" onPress={() => setStep(1)} disabled={submitting} />
-              )}
+              <Word title={submitLabel} weight="medium" onPress={submit} disabled={!canSubmit} busy={submitting} />
+              {detailSteps.length > 0 && <Word title="edit details" onPress={() => setStep(1)} disabled={submitting} />}
             </>
           ) : (
-            <Button
-              title={isLast ? submitLabel : 'Next'}
+            <Word
+              title={isLast ? submitLabel : 'next'}
+              weight="medium"
               onPress={next}
               disabled={!canSubmit}
               busy={submitting}
-              accessibilityLabel={isLast ? submitLabel : `Next, step ${step + 2} of ${totalSteps}`}
+              accessibilityLabel={isLast ? submitLabel : `Next, page ${step + 2} of ${totalSteps}`}
             />
           )}
-          {step > 0 && <Button title="Back" variant="link" onPress={back} disabled={submitting} style={styles.centerLink} />}
-          {step === 0 && footer}
+          {step > 0 && <Word title="back" variant="quiet" size="small" onPress={back} disabled={submitting} />}
         </View>
+        {step === 0 && footer}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -276,82 +274,29 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: {
-    gap: Spacing.md + 2,
+    gap: Spacing.lg,
     paddingTop: Spacing.sm,
-    paddingBottom: Spacing.xl,
-    // Leave room on the right for the card's hard shadow.
-    paddingRight: 6,
+    paddingBottom: Spacing.xxl,
   },
   titleBlock: {
-    paddingTop: Spacing.sm,
-    gap: Spacing.sm,
-    alignItems: 'flex-start',
+    gap: Spacing.xs,
   },
-  stepChip: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: Radius.sm,
-  },
-  stepText: {
-    fontFamily: Fonts.extraBold,
-    fontSize: 13,
-    letterSpacing: 0.8,
-  },
-  title: {
-    fontFamily: Fonts.extraBold,
-    fontSize: 34,
-    lineHeight: 38,
-    letterSpacing: -1,
-  },
-  card: {
-    gap: Spacing.md,
-    padding: Spacing.lg - 4,
+  fields: {
+    gap: Spacing.lg,
   },
   field: {
-    gap: 6,
-  },
-  label: {
-    fontFamily: Fonts.bold,
-    fontSize: 15,
-  },
-  input: {
-    fontFamily: Fonts.medium,
-    fontSize: 17,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 2,
-    borderRadius: Radius.md,
-  },
-  multiline: {
-    minHeight: 88,
-    lineHeight: 22,
-    textAlignVertical: 'top', // Android: start typing at the top, not vertically centred
-  },
-  error: {
-    fontFamily: Fonts.bold,
-    fontSize: 14,
-  },
-  moreLater: {
-    fontFamily: Fonts.medium,
-    fontSize: 13,
+    gap: Spacing.xs,
   },
   inlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-  },
-  inlineLink: {
-    minHeight: 36,
-  },
-  note: {
-    fontFamily: Fonts.medium,
-    fontSize: 13,
+    flexWrap: 'wrap',
   },
   actions: {
-    gap: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.lg,
     marginTop: Spacing.sm,
-  },
-  centerLink: {
-    alignSelf: 'center',
   },
 });

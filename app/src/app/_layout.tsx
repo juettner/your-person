@@ -3,16 +3,14 @@
  * file wraps all of them. `Stack` is a native stack navigator: screens push
  * on top of each other and the back gesture pops them.
  *
- * Before the first screen renders we need two things: the Bricolage Grotesque
- * font files, and the saved palette. The splash screen stays up until both are
- * ready so nothing flashes in a default font or the wrong colors.
+ * Before the first screen renders we need two things: the Grug Hand font
+ * files, and the saved paper. The splash screen stays up until both are
+ * ready so nothing flashes in a default font or the wrong colour.
+ *
+ * The stroke typeface used by `src/handwriting` is plain JSON and needs no
+ * loading step: it is part of the JavaScript bundle.
  */
-import {
-  BricolageGrotesque_500Medium,
-  BricolageGrotesque_700Bold,
-  BricolageGrotesque_800ExtraBold,
-  useFonts,
-} from '@expo-google-fonts/bricolage-grotesque';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -27,11 +25,10 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 
 export default function RootLayout() {
   // expo-font downloads nothing at runtime: the font files ship inside the app bundle.
-  // The names used here are what `fontFamily: Fonts.bold` etc. refer to.
+  // The names used here are what `fontFamily: Fonts.hand` etc. refer to.
   const [fontsLoaded, fontError] = useFonts({
-    [Fonts.medium]: BricolageGrotesque_500Medium,
-    [Fonts.bold]: BricolageGrotesque_700Bold,
-    [Fonts.extraBold]: BricolageGrotesque_800ExtraBold,
+    [Fonts.hand]: require('../../assets/fonts/GrugHand-Regular.ttf'),
+    [Fonts.handMedium]: require('../../assets/fonts/GrugHand-Medium.ttf'),
   });
   const [themeId, setThemeId] = useState<ThemeId | null>(null);
 
@@ -64,7 +61,9 @@ function Shell() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: p.ground },
+          // A plain fade between screens: nothing slides in from the side, the words just change.
+          animation: 'fade',
+          contentStyle: { backgroundColor: p.paper },
         }}
       />
     </>

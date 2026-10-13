@@ -1,9 +1,9 @@
 /**
- * Today: the heart of the app. One card at a time.
+ * Today: the heart of the app. One prompt at a time, written in front of you.
  *
- *  - "Nope" hides it and moves on; "Good one" keeps it coming back; "Not now"
+ *  - "nope" hides it and moves on; "good one" keeps it coming back; "not now"
  *    skips without judging it.
- *  - After a question, "What did they say?" writes a one-line memory.
+ *  - After a question, "what did they say?" writes a one-line memory.
  *  - Day mode deals questions with the occasional appreciation, bid, or
  *    dream card. Evening mode deals the end-of-day conversation.
  *
@@ -12,21 +12,46 @@
  */
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
-import { ThumbsDown, ThumbsUp } from '@/components/Icons';
-import { PromptCard } from '@/components/PromptCard';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { Hand } from '@/components/Hand';
+import { HandInput } from '@/components/HandInput';
 import { Screen } from '@/components/Screen';
 import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Radius, Spacing } from '@/constants/theme';
-import { api, describeError, Prompt, PromptMode, PromptsResponse, Score } from '@/lib/api';
+import { Thinking } from '@/components/Thinking';
+import { Word } from '@/components/Word';
+import { WordChoice } from '@/components/WordChoice';
+import { HandSize, Spacing } from '@/constants/theme';
+import { Handwriting } from '@/handwriting/Handwriting';
+import { api, describeError, Prompt, PromptKind, PromptMode, PromptsResponse, Score } from '@/lib/api';
 import { getProfileId } from '@/lib/profile-store';
 
 const BATCH_SIZE = 3;
 
 type Status = 'loading' | 'ready' | 'error';
+
+/** The small line above a card that says what to do with it. */
+const KIND_LABEL: Record<Exclude<PromptKind, 'question'>, string> = {
+  appreciation: 'say it out loud',
+  bid: 'today',
+  dream: 'go deeper',
+  stress: 'just listen',
+};
+
+function hintFor(prompt: Prompt, askName: string): string {
+  switch (prompt.kind) {
+    case 'appreciation':
+      return `not a question. tell ${askName}, in your own words.`;
+    case 'bid':
+      return 'one small thing. good one if it landed.';
+    case 'dream':
+      return 'a bigger one. no rush, and no fixing.';
+    case 'stress':
+      return "listen, take their side, don't solve it.";
+    default:
+      return prompt.source === 'ai' ? `written for ${askName}. rate it to teach the deck.` : 'rate it so your deck gets better.';
+  }
+}
 
 export default function TodayScreen() {
   const p = usePalette();
@@ -39,10 +64,12 @@ export default function TodayScreen() {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [nudges, setNudges] = useState<PromptsResponse['nudges'] | null>(null);
   const [index, setIndex] = useState(0);
-  /** questionId -> score the user gave this session, for button highlighting. */
+  /** questionId -> score the user gave this session, so a chosen word stays circled. */
   const [ratings, setRatings] = useState<Record<string, Score>>({});
   const [rating, setRating] = useState(false);
-  /** The "what did they say?" box: its text, and whether this card already saved one. */
+  /** True once the current prompt has finished writing itself; the hint waits for it. */
+  const [written, setWritten] = useState(false);
+  /** The "what did they say?" line: its text, and whether this card already saved one. */
   const [memoryText, setMemoryText] = useState('');
   const [savedMemoryFor, setSavedMemoryFor] = useState<string | null>(null);
   const [savingMemory, setSavingMemory] = useState(false);
@@ -59,12 +86,20 @@ export default function TodayScreen() {
       setRatings({});
       setMemoryText('');
       setSavedMemoryFor(null);
+      setWritten(false);
       setStatus('ready');
     } catch (err) {
       setError(describeError(err));
       setStatus('error');
     }
   }, []);
+
+  // The focus effect below is created once, so it would see the first render's
+  // `mode` and `prompts` forever. A ref always holds the latest values instead.
+  const latest = useRef({ mode, hasPrompts: prompts.length > 0 });
+  useEffect(() => {
+    latest.current = { mode, hasPrompts: prompts.length > 0 };
+  });
 
   // Runs every time this screen becomes visible, including when coming back
   // from the profile screen, so a renamed partner shows up immediately.
@@ -79,8 +114,8 @@ export default function TodayScreen() {
           return;
         }
         setProfileId(id);
-        if (prompts.length === 0) {
-          await loadBatch(id, mode);
+        if (!latest.current.hasPrompts) {
+          await loadBatch(id, latest.current.mode);
         } else {
           api.getProfile(id).then((prof) => !cancelled && setAskName(prof.name)).catch(() => {});
         }
@@ -88,7 +123,6 @@ export default function TodayScreen() {
       return () => {
         cancelled = true;
       };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loadBatch]),
   );
 
@@ -98,6 +132,7 @@ export default function TodayScreen() {
   const advance = () => {
     setIndex((i) => i + 1);
     setMemoryText('');
+    setWritten(false);
   };
 
   const rate = async (score: Score) => {
@@ -107,7 +142,7 @@ export default function TodayScreen() {
     setRatings((r) => ({ ...r, [current.id]: score })); // optimistic
     try {
       await api.rate(profileId, current.id, score);
-      if (score === -1) advance(); // "Nope" means "not this one"; move along without another tap.
+      if (score === -1) advance(); // "nope" means "not this one"; move along without another tap.
     } catch (err) {
       setError(describeError(err));
     } finally {
@@ -136,279 +171,199 @@ export default function TodayScreen() {
     loadBatch(profileId, next);
   };
 
-  const thumbColor = (score: Score) => (ratings[current?.id ?? ''] === score ? p.onAccent : p.outlineText);
   const upcoming = nudges?.upcomingDates[0];
+  const nudge = upcoming
+    ? `${upcoming.label} is ${upcoming.daysAway === 0 ? 'today' : upcoming.daysAway === 1 ? 'tomorrow' : `in ${upcoming.daysAway} days`}.`
+    : nudges?.reviewDetails
+      ? `it's been a while. still true? give ${askName}'s page a once-over.`
+      : null;
 
   return (
     <Screen>
-      {/* Top row: who we're asking, the day/evening switch, and the way to the profile. */}
-      <View style={styles.topRow}>
-        <Text style={[styles.askName, { color: p.onGround }]}>{askName ? `Ask ${askName}` : ' '}</Text>
-        <View style={styles.topRight}>
-          <ModeSwitch mode={mode} onChange={switchMode} />
-          <Button title="Profile" variant="link" onPress={() => router.push('/profile')} />
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {/* Top: who we're asking, day or evening, and the way to the profile. */}
+        <View style={styles.topRow}>
+          <Hand size="small" tone="muted">
+            {askName ? `ask ${askName}.` : ' '}
+          </Hand>
+          <Word title="profile" size="small" onPress={() => router.push('/profile')} />
         </View>
-      </View>
-
-      {/* Gentle nudges from the server: a date coming up, or details worth a second look. */}
-      {status === 'ready' && (upcoming || nudges?.reviewDetails) && (
-        <Pressable
-          onPress={() => router.push('/profile')}
-          accessibilityRole="button"
-          style={[styles.nudge, { borderColor: p.outlineBorder }]}
-        >
-          <Text style={[styles.nudgeText, { color: p.onGround }]}>
-            {upcoming
-              ? `${upcoming.label} is ${upcoming.daysAway === 0 ? 'today' : upcoming.daysAway === 1 ? 'tomorrow' : `in ${upcoming.daysAway} days`}.`
-              : `It's been a while. Still true? Give ${askName}'s card a once-over.`}
-          </Text>
-        </Pressable>
-      )}
-
-      {status === 'loading' && (
-        <View style={styles.center}>
-          <ActivityIndicator color={p.onGround} size="large" />
+        <View style={styles.modeRow}>
+          <WordChoice
+            options={[
+              { id: 'day', label: 'day' },
+              { id: 'evening', label: 'evening' },
+            ]}
+            selected={[mode]}
+            multi={false}
+            size="small"
+            onChange={(ids) => ids[0] && switchMode(ids[0] as PromptMode)}
+          />
         </View>
-      )}
 
-      {status === 'error' && (
-        <View style={styles.center}>
-          <Card contentStyle={styles.messageCard}>
-            <Text style={[styles.messageTitle, { color: p.ink }]}>Hmm.</Text>
-            <Text style={[styles.messageText, { color: p.muted }]}>{error}</Text>
-          </Card>
-          <Button title="Try again" onPress={() => profileId && loadBatch(profileId, mode)} style={styles.messageButton} />
-        </View>
-      )}
+        {/* A gentle nudge from the server: a date coming up, or details worth a second look. */}
+        {status === 'ready' && nudge && <Word title={nudge} variant="quiet" size="small" onPress={() => router.push('/profile')} />}
 
-      {status === 'ready' && prompts.length === 0 && (
-        <View style={styles.center}>
-          <Card contentStyle={styles.messageCard}>
-            <Text style={[styles.messageTitle, { color: p.ink }]}>No cards left</Text>
-            <Text style={[styles.messageText, { color: p.muted }]}>Add a few more interests to the profile to unlock more.</Text>
-          </Card>
-          <Button title="Edit profile" onPress={() => router.push('/profile')} style={styles.messageButton} />
-        </View>
-      )}
-
-      {status === 'ready' && current && (
-        <>
-          <View style={styles.cardArea}>
-            <PromptCard prompt={current} index={index} total={prompts.length} askName={askName} />
+        {status === 'loading' && (
+          <View style={styles.center}>
+            <Thinking />
           </View>
+        )}
 
-          {/* "What did they say?" Only for cards that ask something. */}
-          {current.kind !== 'bid' && current.kind !== 'appreciation' && (
-            <View style={styles.memoryRow}>
-              {savedMemoryFor === current.id ? (
-                <Text style={[styles.memorySaved, { color: p.onGround }]}>Saved. It will shape the next cards.</Text>
-              ) : (
-                <>
-                  <TextInput
-                    value={memoryText}
-                    onChangeText={setMemoryText}
-                    placeholder={`What did ${askName} say?`}
-                    placeholderTextColor={p.muted}
-                    maxLength={500}
-                    style={[styles.memoryInput, { color: p.ink, borderColor: p.ink, backgroundColor: p.card }]}
-                    accessibilityLabel="What did they say"
-                    returnKeyType="done"
-                    onSubmitEditing={saveMemory}
-                  />
-                  <Button
-                    title="Save"
-                    variant="outline"
-                    onPress={saveMemory}
-                    disabled={!memoryText.trim()}
-                    busy={savingMemory}
-                    style={styles.memoryButton}
-                  />
-                </>
-              )}
-            </View>
-          )}
-
-          <View style={styles.actions}>
-            <View style={styles.thumbs}>
-              <Button
-                title="Nope"
-                variant="outline"
-                icon={<ThumbsDown color={thumbColor(-1)} />}
-                selected={ratings[current.id] === -1}
-                onPress={() => rate(-1)}
-                disabled={rating}
-                style={styles.thumb}
-                accessibilityLabel="Hide this question"
-              />
-              <Button
-                title="Good one"
-                variant="outline"
-                icon={<ThumbsUp color={thumbColor(1)} />}
-                selected={ratings[current.id] === 1}
-                onPress={() => rate(1)}
-                disabled={rating}
-                style={styles.thumb}
-                accessibilityLabel="Good question"
-              />
-            </View>
-            <Button title={index + 1 < prompts.length ? 'Next card' : 'Done'} onPress={advance} />
-            <Button title="Not now" variant="link" onPress={advance} style={styles.notNow} accessibilityLabel="Skip this card for now" />
+        {status === 'error' && (
+          <View style={styles.center}>
+            <Handwriting text="hmm." color={p.ink} size={HandSize.title} />
+            <Hand tone="muted">{error}</Hand>
+            <Word title="try again" onPress={() => profileId && loadBatch(profileId, mode)} />
           </View>
-        </>
-      )}
+        )}
 
-      {finished && prompts.length > 0 && (
-        <View style={styles.center}>
-          <Card contentStyle={styles.messageCard}>
-            <Text style={[styles.messageTitle, { color: p.ink }]}>That&apos;s {prompts.length}.</Text>
-            <Text style={[styles.messageText, { color: p.muted }]}>
-              {mode === 'evening' ? `Now go listen to ${askName}.` : `Go talk to ${askName}.`}
-            </Text>
-          </Card>
-          <Button title={`${prompts.length} more`} onPress={() => profileId && loadBatch(profileId, mode)} style={styles.messageButton} />
-        </View>
-      )}
+        {status === 'ready' && prompts.length === 0 && (
+          <View style={styles.center}>
+            <Handwriting text="no cards left." color={p.ink} size={HandSize.title} />
+            <Hand tone="muted">add a few more interests to the profile to unlock more.</Hand>
+            <Word title="edit profile" onPress={() => router.push('/profile')} />
+          </View>
+        )}
+
+        {status === 'ready' && current && (
+          <>
+            {/* The prompt, written in front of you. Long ones get a smaller pen. */}
+            <View style={styles.cardArea}>
+              <Hand size="small" tone="muted">
+                {current.kind === 'question' ? (current.interest ?? 'just because') : KIND_LABEL[current.kind]}
+              </Hand>
+              <Handwriting
+                key={current.id}
+                text={current.text}
+                color={p.ink}
+                size={current.text.length > 110 ? HandSize.body + 3 : HandSize.hero}
+                delay={0.35}
+                onDone={() => setWritten(true)}
+                style={styles.prompt}
+              />
+              <Hand size="small" tone="muted" style={{ opacity: written ? 1 : 0 }}>
+                {hintFor(current, askName)}
+              </Hand>
+            </View>
+
+            {/* "what did they say?" Only for cards that ask something. */}
+            {current.kind !== 'bid' && current.kind !== 'appreciation' && (
+              <View style={styles.memoryRow}>
+                {savedMemoryFor === current.id ? (
+                  <Hand size="small" tone="muted">
+                    saved. it will shape the next cards.
+                  </Hand>
+                ) : (
+                  <>
+                    <HandInput
+                      value={memoryText}
+                      onChangeText={setMemoryText}
+                      placeholder={`what did ${askName} say?`}
+                      maxLength={500}
+                      size="small"
+                      style={styles.memoryInput}
+                      accessibilityLabel="What did they say"
+                      returnKeyType="done"
+                      onSubmitEditing={saveMemory}
+                    />
+                    <Word title="save" size="small" onPress={saveMemory} disabled={!memoryText.trim()} busy={savingMemory} />
+                  </>
+                )}
+              </View>
+            )}
+
+            <View style={styles.actions}>
+              <View style={styles.actionRow}>
+                <View style={styles.thumbs}>
+                  <Word
+                    title="nope"
+                    variant="toggle"
+                    selected={ratings[current.id] === -1}
+                    onPress={() => rate(-1)}
+                    disabled={rating}
+                    accessibilityLabel="Hide this question"
+                  />
+                  <Word
+                    title="good one"
+                    variant="toggle"
+                    selected={ratings[current.id] === 1}
+                    onPress={() => rate(1)}
+                    disabled={rating}
+                    accessibilityLabel="Good question"
+                  />
+                </View>
+                <Word title={index + 1 < prompts.length ? 'next' : 'done'} weight="medium" onPress={advance} />
+              </View>
+              <View style={styles.actionRow}>
+                <Hand size="small" tone="muted">
+                  {index + 1} of {prompts.length}
+                </Hand>
+                <Word title="not now" variant="quiet" size="small" onPress={advance} accessibilityLabel="Skip this card for now" />
+              </View>
+            </View>
+          </>
+        )}
+
+        {finished && prompts.length > 0 && (
+          <View style={styles.center}>
+            <Handwriting
+              text={`that's ${prompts.length}.\n${mode === 'evening' ? `now go listen to ${askName}.` : `go talk to ${askName}.`}`}
+              color={p.ink}
+              size={HandSize.title}
+            />
+            <Word title={`${prompts.length} more`} onPress={() => profileId && loadBatch(profileId, mode)} />
+          </View>
+        )}
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
 
-/** Day / Evening toggle. Evening deals the end-of-day conversation: listen, take their side, don't fix. */
-function ModeSwitch({ mode, onChange }: { mode: PromptMode; onChange: (m: PromptMode) => void }) {
-  const p = usePalette();
-  return (
-    <View style={[styles.switch, { borderColor: p.outlineBorder }]} accessibilityRole="radiogroup">
-      {(['day', 'evening'] as const).map((m) => {
-        const on = m === mode;
-        return (
-          <Pressable
-            key={m}
-            onPress={() => onChange(m)}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: on }}
-            aria-checked={on}
-            accessibilityLabel={m === 'day' ? 'Day mode' : 'Evening mode'}
-            style={[styles.switchOption, on && { backgroundColor: p.outlineBorder }]}
-          >
-            <Text style={[styles.switchText, { color: on ? p.ground : p.onGround }]}>{m === 'day' ? 'Day' : 'Evening'}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 48,
+    minHeight: 44,
   },
-  topRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  askName: {
-    fontFamily: Fonts.extraBold,
-    fontSize: 20,
-    letterSpacing: -0.4,
-  },
-  switch: {
-    flexDirection: 'row',
-    borderWidth: 2,
-    borderRadius: Radius.pill,
-    overflow: 'hidden',
-  },
-  switchOption: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    minHeight: 32,
-    justifyContent: 'center',
-  },
-  switchText: {
-    fontFamily: Fonts.bold,
-    fontSize: 12,
-  },
-  nudge: {
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderRadius: Radius.md,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginTop: Spacing.xs,
-  },
-  nudgeText: {
-    fontFamily: Fonts.bold,
-    fontSize: 14,
+  modeRow: {
+    minHeight: 40,
   },
   cardArea: {
     flex: 1,
     justifyContent: 'center',
-    paddingRight: 6,
-    paddingBottom: 6,
+    gap: Spacing.md,
+  },
+  prompt: {
+    marginVertical: Spacing.xs,
   },
   center: {
     flex: 1,
     justifyContent: 'center',
     gap: Spacing.lg,
-    paddingRight: 6,
-  },
-  messageCard: {
-    gap: Spacing.sm,
-    paddingVertical: Spacing.xl,
-  },
-  messageTitle: {
-    fontFamily: Fonts.extraBold,
-    fontSize: 32,
-    letterSpacing: -0.8,
-  },
-  messageText: {
-    fontFamily: Fonts.medium,
-    fontSize: 18,
-    lineHeight: 26,
-  },
-  messageButton: {
-    marginBottom: Spacing.xl,
   },
   memoryRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: 12,
+    alignItems: 'flex-end',
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
     minHeight: 48,
   },
   memoryInput: {
     flex: 1,
-    fontFamily: Fonts.medium,
-    fontSize: 15,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 2,
-    borderRadius: Radius.md,
-  },
-  memoryButton: {
-    minHeight: 44,
-    paddingHorizontal: Spacing.md,
-  },
-  memorySaved: {
-    fontFamily: Fonts.bold,
-    fontSize: 14,
   },
   actions: {
-    gap: 12,
-    paddingBottom: Spacing.md,
-    paddingRight: 4,
+    paddingBottom: Spacing.sm,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   thumbs: {
     flexDirection: 'row',
-    gap: 14,
-  },
-  thumb: {
-    flex: 1,
-  },
-  notNow: {
-    alignSelf: 'center',
-    minHeight: 36,
+    gap: Spacing.lg,
   },
 });

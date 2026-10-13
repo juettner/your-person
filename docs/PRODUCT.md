@@ -24,9 +24,13 @@ The user is one half of the couple. They set up a profile *about* their person. 
 
 | Screen | Purpose | Notes |
 | --- | --- | --- |
-| **Onboarding** | Set up the partner profile | A short stack of index cards. Card 1: name, pick interests from chips, one free-text box: "What's going on in their world lately?" Then one card per chosen interest that goes deeper: Sports asks which sport, then which team, then fan or player; Music asks genres, then artists, then live shows or headphones. Every deeper answer is optional. |
-| **Today** | Show questions | One question on a card. Big text. "Ask Sam" at the top. "Nope" hides it, "Good one" keeps it coming back, "Next card" advances. Three per batch, then deal three more. |
-| **Profile** | Update the profile and pick a look | Same cards as onboarding, pre-filled. Save from the first card or walk into the details. Five color palettes to choose from. |
+| **Onboarding** | Set up the partner profile | A few handwritten pages. Page 1: name, circle interests from a list of words, one line: "what's going on in their world right now?" Then one page per chosen interest that goes deeper: sports asks which sport, then which team, then fan or player; music asks genres, then artists, then live shows or headphones. Every deeper answer is optional. |
+| **Today** | Show questions | A plain sheet of colour. "ask sam." in the corner, and the question writes itself across the middle of the screen in handwriting, like someone on the other side is writing it for you. "nope" hides it, "good one" keeps it coming back, "next" advances. Three per batch, then deal three more. |
+| **Profile** | Update the profile and pick a paper | Same pages as onboarding, pre-filled. Save from the first page or walk into the details. Five papers to choose from: paper, night, mint, moss, clay. |
+
+### The look
+
+Modelled on grug (Ocho, Apple Design Award 2026): a single flat colour, handwritten type, nothing else. No cards, borders, shadows, icons or buttons; actions are underlined words, chosen things are circled. The handwriting is Grug Hand, which grug's makers published with their stroke engine; `docs/ARCHITECTURE.md`, "The handwriting engine", explains how the writing animation works.
 
 ### Where they live
 

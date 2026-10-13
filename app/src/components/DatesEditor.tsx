@@ -1,16 +1,17 @@
 /**
  * A short list of dates that matter: label, month, day. Controlled like the
- * chips: the parent owns the list. Kept deliberately plain: three inputs and
- * an "Add" button beat a date picker for "Mom's birthday, March 3".
+ * word choices: the parent owns the list. Kept deliberately plain: three
+ * lines to write on and an "add" word beat a date picker for "mom's birthday, march 3".
  */
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Button } from '@/components/Button';
-import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { StyleSheet, View } from 'react-native';
+import { Hand } from '@/components/Hand';
+import { HandInput } from '@/components/HandInput';
+import { Word } from '@/components/Word';
+import { Spacing } from '@/constants/theme';
 import type { ImportantDate } from '@/lib/api';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
 interface DatesEditorProps {
   dates: ImportantDate[];
@@ -18,7 +19,6 @@ interface DatesEditorProps {
 }
 
 export function DatesEditor({ dates, onChange }: DatesEditorProps) {
-  const p = usePalette();
   const [label, setLabel] = useState('');
   const [month, setMonth] = useState('');
   const [day, setDay] = useState('');
@@ -37,54 +37,32 @@ export function DatesEditor({ dates, onChange }: DatesEditorProps) {
 
   const remove = (index: number) => onChange(dates.filter((_, i) => i !== index));
 
-  const inputStyle = [styles.input, { color: p.ink, borderColor: p.ink, backgroundColor: p.card }];
-
   return (
     <View style={styles.wrap}>
       {dates.map((date, i) => (
-        <View key={`${date.label}-${date.month}-${date.day}-${i}`} style={[styles.row, { borderColor: p.ink }]}>
-          <Text style={[styles.rowText, { color: p.ink }]}>
-            {date.label}
-            <Text style={{ color: p.muted }}>{`  ${MONTHS[date.month - 1]} ${date.day}`}</Text>
-          </Text>
-          <Pressable onPress={() => remove(i)} accessibilityRole="button" accessibilityLabel={`Remove ${date.label}`} hitSlop={8}>
-            <Text style={[styles.remove, { color: p.muted }]}>Remove</Text>
-          </Pressable>
+        <View key={`${date.label}-${date.month}-${date.day}-${i}`} style={styles.row}>
+          <Hand style={styles.rowText}>
+            {date.label.toLowerCase()}
+            <Hand tone="muted">{`  ${MONTHS[date.month - 1]} ${date.day}`}</Hand>
+          </Hand>
+          <Word title="remove" variant="quiet" size="small" onPress={() => remove(i)} accessibilityLabel={`Remove ${date.label}`} />
         </View>
       ))}
 
       <View style={styles.form}>
-        <TextInput
+        <HandInput
           value={label}
           onChangeText={setLabel}
-          placeholder="Mom's birthday"
-          placeholderTextColor={p.muted}
+          placeholder="mom's birthday"
           maxLength={60}
-          style={[...inputStyle, styles.labelInput]}
+          autoCapitalize="none"
+          style={styles.labelInput}
           accessibilityLabel="Date label"
         />
-        <TextInput
-          value={month}
-          onChangeText={setMonth}
-          placeholder="MM"
-          placeholderTextColor={p.muted}
-          keyboardType="number-pad"
-          maxLength={2}
-          style={[...inputStyle, styles.numInput]}
-          accessibilityLabel="Month"
-        />
-        <TextInput
-          value={day}
-          onChangeText={setDay}
-          placeholder="DD"
-          placeholderTextColor={p.muted}
-          keyboardType="number-pad"
-          maxLength={2}
-          style={[...inputStyle, styles.numInput]}
-          accessibilityLabel="Day"
-        />
+        <HandInput value={month} onChangeText={setMonth} placeholder="mm" keyboardType="number-pad" maxLength={2} style={styles.numInput} accessibilityLabel="Month" />
+        <HandInput value={day} onChangeText={setDay} placeholder="dd" keyboardType="number-pad" maxLength={2} style={styles.numInput} accessibilityLabel="Day" />
       </View>
-      <Button title="Add date" variant="outline" onPress={add} disabled={!canAdd} style={styles.addButton} />
+      <Word title="add date" size="small" onPress={add} disabled={!canAdd} />
     </View>
   );
 }
@@ -97,39 +75,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    paddingVertical: Spacing.sm,
+    gap: Spacing.md,
   },
   rowText: {
-    fontFamily: Fonts.bold,
-    fontSize: 15,
     flex: 1,
-  },
-  remove: {
-    fontFamily: Fonts.bold,
-    fontSize: 13,
-    textDecorationLine: 'underline',
   },
   form: {
     flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  input: {
-    fontFamily: Fonts.medium,
-    fontSize: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 2,
-    borderRadius: Radius.md,
+    gap: Spacing.md,
+    alignItems: 'flex-end',
   },
   labelInput: {
     flex: 1,
   },
   numInput: {
-    width: 64,
-    textAlign: 'center',
-  },
-  addButton: {
-    minHeight: 44,
+    width: 48,
   },
 });

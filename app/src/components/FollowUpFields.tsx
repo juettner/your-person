@@ -1,12 +1,14 @@
 /**
  * The follow-up questions for ONE interest, rendered from the taxonomy the
- * API serves: chips for `choice`, an input for `text`. Nothing here knows
- * about sports or music specifically; it only knows the two field kinds.
+ * API serves: words to pick for `choice`, a line to write on for `text`.
+ * Nothing here knows about sports or music specifically; it only knows the
+ * two field kinds.
  */
-import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { ChoiceChips } from '@/components/ChoiceChips';
-import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Radius } from '@/constants/theme';
+import { StyleSheet, View } from 'react-native';
+import { Hand } from '@/components/Hand';
+import { HandInput } from '@/components/HandInput';
+import { WordChoice } from '@/components/WordChoice';
+import { Spacing } from '@/constants/theme';
 import type { Interest } from '@/lib/api';
 
 type Answers = Record<string, string | string[]>;
@@ -18,49 +20,43 @@ interface FollowUpFieldsProps {
 }
 
 export function FollowUpFields({ interest, answers, onChange }: FollowUpFieldsProps) {
-  const p = usePalette();
-
   const set = (id: string, value: string | string[]) => onChange({ ...answers, [id]: value });
 
   return (
     <>
-      {interest.followUps.map((f) => (
-        <View key={f.id} style={styles.field}>
-          <Text style={[styles.label, { color: p.ink }]}>{f.prompt}</Text>
-          {f.kind === 'choice' ? (
-            <ChoiceChips options={f.options ?? []} value={answers[f.id]} multi={f.multi ?? false} onChange={(v) => set(f.id, v)} />
-          ) : (
-            <TextInput
-              value={typeof answers[f.id] === 'string' ? (answers[f.id] as string) : ''}
-              onChangeText={(v) => set(f.id, v)}
-              placeholder={f.placeholder}
-              placeholderTextColor={p.muted}
-              maxLength={120}
-              autoCapitalize="sentences"
-              style={[styles.input, { color: p.ink, borderColor: p.ink, backgroundColor: p.card }]}
-              accessibilityLabel={f.prompt}
-            />
-          )}
-        </View>
-      ))}
+      {interest.followUps.map((f) => {
+        const value = answers[f.id];
+        return (
+          <View key={f.id} style={styles.field}>
+            <Hand size="small" tone="muted">
+              {f.prompt.toLowerCase()}
+            </Hand>
+            {f.kind === 'choice' ? (
+              <WordChoice
+                options={(f.options ?? []).map((o) => ({ id: o, label: o.toLowerCase() }))}
+                selected={Array.isArray(value) ? value : typeof value === 'string' && value ? [value] : []}
+                multi={f.multi ?? false}
+                onChange={(ids) => set(f.id, f.multi ? ids : (ids[0] ?? ''))}
+              />
+            ) : (
+              <HandInput
+                value={typeof value === 'string' ? value : ''}
+                onChangeText={(v) => set(f.id, v)}
+                placeholder={f.placeholder?.toLowerCase()}
+                maxLength={120}
+                autoCapitalize="none"
+                accessibilityLabel={f.prompt}
+              />
+            )}
+          </View>
+        );
+      })}
     </>
   );
 }
 
 const styles = StyleSheet.create({
   field: {
-    gap: 6,
-  },
-  label: {
-    fontFamily: Fonts.bold,
-    fontSize: 15,
-  },
-  input: {
-    fontFamily: Fonts.medium,
-    fontSize: 17,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 2,
-    borderRadius: Radius.md,
+    gap: Spacing.xs,
   },
 });

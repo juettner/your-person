@@ -7,12 +7,13 @@ Phases, not dates. Each phase should be shippable on its own.
 - [x] NestJS API: profiles, curated question bank, selection with hide/like, in-memory and MongoDB storage
 - [x] Expo app: onboarding questionnaire, full-screen question cards with thumbs up/down, profile edit
 - [x] Runs on web with no infrastructure; iOS and Android via Expo Go
-- [x] Index Card look with five selectable palettes
+- [x] Index Card look with five selectable palettes (replaced by the Hand look)
 - [x] Deep interests: per-interest follow-up cards in onboarding, answers feed templated questions
 - [x] Location as a place name, "Around town" interest, local follow-ups and city questions
 - [x] AI question engine: Claude writes a per-profile deck from the whole profile and feedback, optional web research, mixed into selection, rated like curated questions
 - [x] Gottman-inspired cards: appreciation, bids, dreams, evening mode, rituals
 - [x] Memories ("what they said"), Not now, dates that matter, weekly nudge, shorter onboarding
+- [x] The Hand look: one flat colour, handwritten type, the question writes itself (a port of grug's engine)
 - [ ] Turn the engine on with a real key and read a few decks critically; tune the system prompt from what comes back
 - [ ] Try it on a real phone with Expo Go and fix what feels wrong
 

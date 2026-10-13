@@ -1,6 +1,6 @@
 /**
- * Every screen's outer frame: full-height, respects the notch and home
- * indicator, paints the palette's ground, and on web stays phone-width.
+ * Every screen's outer frame: the paper. Full height, respects the notch and
+ * home indicator, and on web stays phone-width in the middle of the window.
  */
 import type { PropsWithChildren } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -11,7 +11,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 export function Screen({ children }: PropsWithChildren) {
   const p = usePalette();
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: p.ground }]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: p.paper }]}>
       <View style={styles.column}>{children}</View>
     </SafeAreaView>
   );
@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     maxWidth: MaxContentWidth,
-    paddingHorizontal: 20,
-    paddingTop: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
   },
 });

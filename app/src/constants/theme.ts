@@ -1,226 +1,47 @@
 /**
- * Design tokens for the "Index Card" look.
+ * Design tokens for the "Hand" look: one flat colour, handwritten type, nothing else.
  *
- * The app has one layout and five palettes. A palette is a flat object of
- * named colors; every component reads colors from the palette it gets via
- * `usePalette()` (see components/ThemeProvider.tsx) and never hard-codes a hex.
+ * There are no cards, borders, shadows, chips or icons. A screen is paper,
+ * words on it are ink, and secondary words are a lighter ink. Five papers to
+ * choose from; the chosen one is remembered on the device.
  *
- * Vocabulary:
- *   ground   the screen background. In most palettes it is pale; in Terracotta it is the loud one.
- *   onGround text that sits directly on the ground (the "Ask Sam" header, links)
- *   card     the index card's paper
- *   ink      text and 2px borders on the card, and the fill of the main button
- *   accent   the highlight chip behind the interest label, and the button's offset shadow
+ * Typography comes in two flavours that share one set of drawings:
+ *   - The Grug Hand TTF fonts (assets/fonts) for everything static: labels,
+ *     inputs, actions. Loaded once in app/_layout.tsx.
+ *   - The stroke engine (src/handwriting) for the words that should be
+ *     written in front of you: the question of the moment, the screen title.
+ *
+ * Sizes: the engine's `size` is the glyph box height, and its x-height is 40%
+ * of that. The TTF's x-height is 50% of its font size. So an engine size of 30
+ * matches a font size of 24. `Type` below gives the TTF sizes; `HandSize`
+ * gives the engine sizes that line up with them.
  */
 
-export type ThemeId =
-  | 'sky'
-  | 'lavender'
-  | 'blush'
-  | 'butter'
-  | 'terracotta'
-  | 'mint'
-  | 'sand'
-  | 'ocean'
-  | 'charcoal'
-  | 'cocoa';
+export type ThemeId = 'paper' | 'night' | 'mint' | 'moss' | 'clay';
 
 export interface Palette {
   id: ThemeId;
   name: string;
-  /** Status bar icons: dark icons on pale grounds, light icons on the terracotta ground. */
   statusBar: 'dark' | 'light';
-  ground: string;
-  onGround: string;
-  card: string;
+  /** The screen. */
+  paper: string;
+  /** Words. */
   ink: string;
-  /** Secondary text on the card: counters, hints. Picked to pass 4.5:1 on `card`. */
+  /** Secondary words: hints, dates, placeholders. Passes 4.5:1 on `paper`. */
   muted: string;
-  accent: string;
-  onAccent: string;
-  /** Text on an ink-filled button. */
-  onInk: string;
-  /** Outlined buttons sit on the ground, so their border/text follow `onGround`. */
-  outlineBorder: string;
-  outlineText: string;
-  outlineBg: string;
-  danger: string;
+  /** Rules under inputs. */
+  rule: string;
 }
 
 export const THEMES: readonly Palette[] = [
-  {
-    id: 'sky',
-    name: 'Sky',
-    statusBar: 'dark',
-    ground: '#CFE3F7',
-    onGround: '#12355B',
-    card: '#FFFFFF',
-    ink: '#12355B',
-    muted: '#4A607A',
-    accent: '#FF8C42',
-    onAccent: '#12355B',
-    onInk: '#FFFFFF',
-    outlineBorder: '#12355B',
-    outlineText: '#12355B',
-    outlineBg: '#FFFFFF',
-    danger: '#A32626',
-  },
-  {
-    id: 'lavender',
-    name: 'Lavender',
-    statusBar: 'dark',
-    ground: '#E6DFF5',
-    onGround: '#2B2353',
-    card: '#FFFFFF',
-    ink: '#2B2353',
-    muted: '#5A5478',
-    accent: '#C8F045',
-    onAccent: '#2B2353',
-    onInk: '#FFFFFF',
-    outlineBorder: '#2B2353',
-    outlineText: '#2B2353',
-    outlineBg: '#FFFFFF',
-    danger: '#A32626',
-  },
-  {
-    id: 'blush',
-    name: 'Blush',
-    statusBar: 'dark',
-    ground: '#F6DCE1',
-    onGround: '#5E1D35',
-    card: '#FFFBF8',
-    ink: '#5E1D35',
-    muted: '#7A4A5A',
-    accent: '#FFC46B',
-    onAccent: '#5E1D35',
-    onInk: '#FFFFFF',
-    outlineBorder: '#5E1D35',
-    outlineText: '#5E1D35',
-    outlineBg: '#FFFBF8',
-    danger: '#A32626',
-  },
-  {
-    id: 'butter',
-    name: 'Butter',
-    statusBar: 'dark',
-    ground: '#FFF0B3',
-    onGround: '#1E3FAE',
-    card: '#FFFFFF',
-    ink: '#1E3FAE',
-    muted: '#4C5A8A',
-    accent: '#E04545',
-    onAccent: '#FFFFFF',
-    onInk: '#FFFFFF',
-    outlineBorder: '#1E3FAE',
-    outlineText: '#1E3FAE',
-    outlineBg: '#FFFFFF',
-    danger: '#A32626',
-  },
-  {
-    id: 'terracotta',
-    name: 'Terracotta',
-    statusBar: 'light',
-    ground: '#C9573F',
-    onGround: '#FFFFFF',
-    card: '#FFF4E6',
-    ink: '#3A1F14',
-    muted: '#7A4F3F',
-    accent: '#F6C453',
-    onAccent: '#3A1F14',
-    onInk: '#FFF4E6',
-    outlineBorder: '#FFFFFF',
-    outlineText: '#FFFFFF',
-    outlineBg: 'transparent',
-    danger: '#FFE1DB',
-  },
-  {
-    id: 'mint',
-    name: 'Mint',
-    statusBar: 'dark',
-    ground: '#D6F2E3',
-    onGround: '#0E4D3A',
-    card: '#FFFFFF',
-    ink: '#0E4D3A',
-    muted: '#3F6B5B',
-    accent: '#FF7B54',
-    onAccent: '#0E4D3A',
-    onInk: '#FFFFFF',
-    outlineBorder: '#0E4D3A',
-    outlineText: '#0E4D3A',
-    outlineBg: '#FFFFFF',
-    danger: '#A32626',
-  },
-  {
-    id: 'sand',
-    name: 'Sand',
-    statusBar: 'dark',
-    ground: '#F3E7D3',
-    onGround: '#4A2E14',
-    card: '#FFFCF7',
-    ink: '#4A2E14',
-    muted: '#7A5B3C',
-    accent: '#2F80ED',
-    onAccent: '#FFFFFF',
-    onInk: '#FFFCF7',
-    outlineBorder: '#4A2E14',
-    outlineText: '#4A2E14',
-    outlineBg: '#FFFCF7',
-    danger: '#A32626',
-  },
-  {
-    id: 'ocean',
-    name: 'Ocean',
-    statusBar: 'light',
-    ground: '#0F2F4C',
-    onGround: '#FFFFFF',
-    card: '#FFFFFF',
-    ink: '#0F2F4C',
-    muted: '#4A607A',
-    accent: '#4FD1C5',
-    onAccent: '#0F2F4C',
-    onInk: '#FFFFFF',
-    outlineBorder: '#FFFFFF',
-    outlineText: '#FFFFFF',
-    outlineBg: 'transparent',
-    danger: '#FFD6D1',
-  },
-  {
-    id: 'charcoal',
-    name: 'Charcoal',
-    statusBar: 'light',
-    ground: '#2A2A2E',
-    onGround: '#F7F5EE',
-    card: '#F7F5EE',
-    ink: '#1A1A1A',
-    muted: '#5C5C5C',
-    accent: '#F4E04D',
-    onAccent: '#1A1A1A',
-    onInk: '#F7F5EE',
-    outlineBorder: '#F7F5EE',
-    outlineText: '#F7F5EE',
-    outlineBg: 'transparent',
-    danger: '#FFD6D1',
-  },
-  {
-    id: 'cocoa',
-    name: 'Cocoa',
-    statusBar: 'light',
-    ground: '#5B3A29',
-    onGround: '#FFF6EC',
-    card: '#FFF6EC',
-    ink: '#3A2416',
-    muted: '#7A5A47',
-    accent: '#F2B88A',
-    onAccent: '#3A2416',
-    onInk: '#FFF6EC',
-    outlineBorder: '#FFF6EC',
-    outlineText: '#FFF6EC',
-    outlineBg: 'transparent',
-    danger: '#FFD6D1',
-  },
+  { id: 'paper', name: 'paper', statusBar: 'dark', paper: '#FFFFFF', ink: '#000000', muted: '#6B6B6B', rule: '#000000' },
+  { id: 'night', name: 'night', statusBar: 'light', paper: '#000000', ink: '#FFFFFF', muted: '#A3A3A3', rule: '#FFFFFF' },
+  { id: 'mint', name: 'mint', statusBar: 'dark', paper: '#D9F0DC', ink: '#0B2E22', muted: '#4B6B5E', rule: '#0B2E22' },
+  { id: 'moss', name: 'moss', statusBar: 'light', paper: '#143F32', ink: '#EAF6EC', muted: '#A9C8B6', rule: '#EAF6EC' },
+  { id: 'clay', name: 'clay', statusBar: 'dark', paper: '#F3E6D6', ink: '#3A2414', muted: '#7B6450', rule: '#3A2414' },
 ];
 
-export const DEFAULT_THEME: ThemeId = 'sky';
+export const DEFAULT_THEME: ThemeId = 'paper';
 
 export function paletteFor(id: ThemeId): Palette {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];
@@ -228,14 +49,26 @@ export function paletteFor(id: ThemeId): Palette {
 
 /**
  * Font family names as registered by expo-font (see app/_layout.tsx).
- * On native, a custom font family must be selected by NAME per weight;
- * combining `fontFamily` with `fontWeight` picks the wrong face. So styles use
- * `fontFamily: Fonts.bold`, never `fontWeight: '700'`.
+ * Pick a face by NAME, never with `fontWeight`: on native that would select
+ * the wrong file.
  */
 export const Fonts = {
-  medium: 'BricolageGrotesque_500Medium',
-  bold: 'BricolageGrotesque_700Bold',
-  extraBold: 'BricolageGrotesque_800ExtraBold',
+  hand: 'GrugHand',
+  handMedium: 'GrugHand-Medium',
+} as const;
+
+/** TTF font sizes. */
+export const Type = {
+  title: 30,
+  body: 22,
+  small: 18,
+} as const;
+
+/** Engine sizes that line up with `Type` (engine size = font size / 0.8). */
+export const HandSize = {
+  hero: 38,
+  title: 36,
+  body: 27,
 } as const;
 
 export const Spacing = {
@@ -247,12 +80,5 @@ export const Spacing = {
   xxl: 48,
 } as const;
 
-export const Radius = {
-  sm: 6,
-  md: 12,
-  card: 20,
-  pill: 999,
-} as const;
-
 /** On web, keep the layout phone-shaped instead of stretching across a desktop. */
-export const MaxContentWidth = 480;
+export const MaxContentWidth = 440;

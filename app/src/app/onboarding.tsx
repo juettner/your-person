@@ -1,5 +1,5 @@
 /**
- * First-run screen: fill in the cards, then start asking.
+ * First-run screen: fill in the page, then start asking.
  */
 import { router } from 'expo-router';
 import { ProfileForm } from '@/components/ProfileForm';
@@ -17,7 +17,7 @@ export default function OnboardingScreen() {
 
   return (
     <Screen>
-      <ProfileForm mode="create" title="Fill in the card." submitLabel="Deal me in" onSubmit={create} />
+      <ProfileForm mode="create" title="tell me about your person." submitLabel="deal me in" onSubmit={create} />
     </Screen>
   );
 }

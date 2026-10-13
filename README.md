@@ -52,6 +52,10 @@ cd api && npm run lint && npm test && npm run test:e2e && npm run build
 cd app && npm run typecheck && npm run export:web
 ```
 
+## The look
+
+The UI is modelled on grug: one flat colour, handwritten type, and the question of the moment writes itself across the screen. The handwriting is Grug Hand by Jip van der Velde and Michel Elings (Ocho), used under their license with attribution (`app/assets/fonts/LICENSE`). `docs/ARCHITECTURE.md`, "The handwriting engine", explains the port.
+
 ## Why `--legacy-peer-deps`
 
 npm 10.9 currently crashes while resolving an optional peer of vitest 5. The flag skips that step and installs the pinned versions fine. See `docs/ROADMAP.md`, "Known debt".

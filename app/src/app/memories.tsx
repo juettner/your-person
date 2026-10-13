@@ -3,12 +3,14 @@
  */
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { FlatList, StyleSheet, View } from 'react-native';
+import { Hand } from '@/components/Hand';
 import { Screen } from '@/components/Screen';
 import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Spacing } from '@/constants/theme';
+import { Thinking } from '@/components/Thinking';
+import { Word } from '@/components/Word';
+import { HandSize, Spacing } from '@/constants/theme';
+import { Handwriting } from '@/handwriting/Handwriting';
 import { api, describeError, Memory } from '@/lib/api';
 import { getProfileId } from '@/lib/profile-store';
 
@@ -54,38 +56,43 @@ export default function MemoriesScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <Button title="Back" variant="link" onPress={() => router.back()} style={styles.back} />
-        <Text style={[styles.title, { color: p.onGround }]} accessibilityRole="header">
-          What they said.
-        </Text>
+        <Word title="back" size="small" onPress={() => router.back()} />
+        <Handwriting text="what they said." color={p.ink} size={HandSize.title} />
       </View>
 
-      {error && <Text style={[styles.error, { color: p.danger }]}>{error}</Text>}
+      {error && <Hand tone="muted">{error}</Hand>}
 
       {memories === null ? (
-        <ActivityIndicator color={p.onGround} style={styles.spinner} />
+        <View style={styles.spaced}>
+          <Thinking />
+        </View>
       ) : memories.length === 0 ? (
-        <Card contentStyle={styles.emptyCard}>
-          <Text style={[styles.emptyTitle, { color: p.ink }]}>Nothing yet.</Text>
-          <Text style={[styles.emptyText, { color: p.muted }]}>
-            After you ask a question, jot down what they said. It shows up here, and it makes the next questions better.
-          </Text>
-        </Card>
+        <View style={styles.empty}>
+          <Hand>nothing yet.</Hand>
+          <Hand tone="muted">after you ask a question, jot down what they said. it shows up here, and it makes the next questions better.</Hand>
+        </View>
       ) : (
         <FlatList
           data={memories}
           keyExtractor={(m) => m.id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View style={[styles.rule, { backgroundColor: p.muted }]} />}
           renderItem={({ item }) => (
-            <Card contentStyle={styles.memoryCard}>
-              {item.questionText ? <Text style={[styles.question, { color: p.muted }]}>{item.questionText}</Text> : null}
-              <Text style={[styles.text, { color: p.ink }]}>{item.text}</Text>
+            <View style={styles.memory}>
+              {item.questionText ? (
+                <Hand size="small" tone="muted">
+                  {item.questionText.toLowerCase()}
+                </Hand>
+              ) : null}
+              <Hand>{item.text}</Hand>
               <View style={styles.footer}>
-                <Text style={[styles.date, { color: p.muted }]}>{new Date(item.createdAt).toLocaleDateString()}</Text>
-                <Button title="Remove" variant="link" tone="card" onPress={() => remove(item)} style={styles.remove} />
+                <Hand size="small" tone="muted">
+                  {new Date(item.createdAt).toLocaleDateString().toLowerCase()}
+                </Hand>
+                <Word title="remove" variant="quiet" size="small" onPress={() => remove(item)} />
               </View>
-            </Card>
+            </View>
           )}
         />
       )}
@@ -94,19 +101,11 @@ export default function MemoriesScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: Spacing.sm, paddingBottom: Spacing.md },
-  back: { alignSelf: 'flex-start' },
-  title: { fontFamily: Fonts.extraBold, fontSize: 34, lineHeight: 38, letterSpacing: -1 },
-  error: { fontFamily: Fonts.bold, fontSize: 14, marginBottom: Spacing.sm },
-  spinner: { marginTop: Spacing.xxl },
-  list: { gap: Spacing.md, paddingRight: 6, paddingBottom: Spacing.xl },
-  emptyCard: { gap: Spacing.sm },
-  emptyTitle: { fontFamily: Fonts.extraBold, fontSize: 24 },
-  emptyText: { fontFamily: Fonts.medium, fontSize: 16, lineHeight: 23 },
-  memoryCard: { gap: Spacing.sm, padding: Spacing.md + 4 },
-  question: { fontFamily: Fonts.medium, fontSize: 14 },
-  text: { fontFamily: Fonts.bold, fontSize: 19, lineHeight: 26 },
+  header: { gap: Spacing.sm, paddingBottom: Spacing.lg },
+  spaced: { marginTop: Spacing.xl },
+  empty: { gap: Spacing.sm },
+  list: { paddingBottom: Spacing.xl },
+  memory: { gap: Spacing.xs, paddingVertical: Spacing.md },
+  rule: { height: 1, opacity: 0.3 },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  date: { fontFamily: Fonts.medium, fontSize: 13 },
-  remove: { minHeight: 32 },
 });
