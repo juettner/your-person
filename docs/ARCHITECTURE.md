@@ -36,35 +36,39 @@ Two deployable units, one repo. The app never talks to the database; it only tal
 - React is a component model. A component is a function that takes `props` (think constructor arguments) and returns UI. State lives in hooks (`useState`, `useEffect`). There are no classes to speak of anymore.
 - React Native renders real native widgets (`View` is a `UIView` on iOS, a `ViewGroup` on Android, a `div` on web). Styling uses a subset of CSS expressed as JavaScript objects.
 - Colors come from a palette object provided through React Context (`components/ThemeProvider.tsx`); components call `usePalette()` and never hard-code a hex. Five papers live in `constants/theme.ts`, and the chosen one is remembered on the device. Spring analogy: a scoped bean that any component can have injected.
-- The look is one flat colour and handwritten type, nothing else. See "The handwriting engine" below for how the words get written in front of you.
+- The look is one soft colour and a script hand, nothing else. See "The handwriting engine" below for how the words get written in front of you.
 - **Expo Router** is file-based navigation: every file under `src/app/` is a screen, and `_layout.tsx` files define the navigator around them. Think of it like Spring MVC mapping URLs to controllers by convention instead of annotations.
 - The app code is heavily commented. Start with `app/src/app/_layout.tsx` and follow the imports.
 
 ## The handwriting engine
 
-The UI is modelled on the app grug (Ocho, 2026 Apple Design Award): a plain
-sheet of colour with a line of handwriting that writes itself. grug's makers
-published their engine as the Swift package HandDrawnFont, with the Grug Hand
-stroke artwork and compiled TTF fonts, under Apache 2.0 with the Commons
-Clause (use in a product is fine; reselling the font is not; attribution is
-required and lives on the profile screen). `app/src/handwriting/` is a port of
-that engine to React Native; `app/assets/fonts/` holds the TTFs for static text.
+The UI takes its shape from the app grug (Ocho, 2026 Apple Design Award): a
+plain sheet of colour with a line of handwriting that writes itself. grug
+draws its own hand-lettered caveman font. We do the same trick with a script
+hand instead: EMS Allure, which is the romantic script Allura (Rob Leuschke)
+traced as pen strokes by Sheldon B. Michaels and Windell H. Oskay for pen
+plotters. Both are under the SIL Open Font License. The TTF of Allura (via
+`@expo-google-fonts/allura`) carries all static text, so the written words and
+the typed words are the same design.
 
 **How it works.** A letter is not an outline, it is the path a pen took: a
 list of strokes, each a list of points, in drawing order. To show a finished
 letter you draw the whole path; to animate it you draw the path up to some
-length. The pieces, in order:
+length. The pieces, in `app/src/handwriting/`:
 
-1. `scripts/build-typeface.mjs` turns the upstream JSON (~480 KB of UUIDs and
-   long floats) into `src/handwriting/grug-hand.json` (~50 KB): points as
-   integers on a 1000-grid, strokes simplified with Ramer-Douglas-Peucker.
-2. `typeface.ts` sizes one glyph. Every drawing was made against the same
-   baseline and x-height guides, so scaling by x-height (40% of the requested
-   size, baseline at 70%) lines every letter up. Scaled glyphs are cached.
+1. `scripts/build-typeface.mjs` turns a single-line SVG font into
+   `typeface.json` (~46 KB): it parses each glyph's path, flattens curves
+   into short segments, flips y to point down, and simplifies each stroke
+   with Ramer-Douglas-Peucker. Glyphs keep their advance widths, which is
+   what lets a connected script join up.
+2. `typeface.ts` scales a glyph to a font size, exactly like a normal font
+   would (1000 units per em). Scaled glyphs are cached.
 3. `plan.ts` lays text out on lines and gives each letter a start time and a
-   duration: path length / 12,000 canvas units per second, clamped to 8-18 ms,
-   times a speed multiplier. Speed 1 is grug's quick scribble; the app uses 4,
-   which is the slow flow. A space adds 8 ms, a line break 12 ms.
+   duration: its path length divided by a pen speed in font units per
+   second, clamped so a dot is not instant and a flourished capital does not
+   drag. Longer, loopier letters take longer, which is what makes it feel
+   written rather than typed. A space is a short pause, a line break a longer
+   one, and `speed` scales all of it.
 4. `Handwriting.tsx` measures its width, builds the plan, and runs one
    `requestAnimationFrame` clock throttled to 15-30 fps (grug's rule: fewer
    frames for longer text; nobody can tell). Every frame derives each letter's
@@ -73,12 +77,15 @@ length. The pieces, in order:
    to its length, `strokeDashoffset` the part not yet drawn); finished strokes
    are plain paths; unstarted ones are skipped. When the clock passes the total
    duration the loop stops and the component is static from then on.
-5. Reduce Motion (OS setting, or `prefers-reduced-motion` on web) skips the
+5. With `haptics` on, the phone ticks softly as the pen starts each word and
+   taps once when the line is finished (`expo-haptics`; nothing on web).
+   Tapping a word gives the same soft click. So you feel the writing as well
+   as see it.
+6. Reduce Motion (OS setting, or `prefers-reduced-motion` on web) skips the
    animation and shows the finished text.
 
-Characters the artwork lacks (accents, "&", emoji) are drawn in the Grug Hand
-font at the same spot so nothing silently disappears. The TTF and the stroke
-data are the same drawings, so static and animated text match.
+Characters the artwork lacks (emoji, odd symbols) are drawn in the Allura
+font at the same spot so nothing silently disappears.
 
 **Java analogy.** The plan is a precomputed schedule; rendering is a pure
 function of (plan, elapsed). That is the same shape as building a query plan

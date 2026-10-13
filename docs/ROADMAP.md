@@ -13,7 +13,7 @@ Phases, not dates. Each phase should be shippable on its own.
 - [x] AI question engine: Claude writes a per-profile deck from the whole profile and feedback, optional web research, mixed into selection, rated like curated questions
 - [x] Gottman-inspired cards: appreciation, bids, dreams, evening mode, rituals
 - [x] Memories ("what they said"), Not now, dates that matter, weekly nudge, shorter onboarding
-- [x] The Hand look: one flat colour, handwritten type, the question writes itself (a port of grug's engine)
+- [x] The Letter look: one soft colour, a script hand, the question writes itself with haptic ticks (grug's idea, our own hand)
 - [ ] Turn the engine on with a real key and read a few decks critically; tune the system prompt from what comes back
 - [ ] Try it on a real phone with Expo Go and fix what feels wrong
 

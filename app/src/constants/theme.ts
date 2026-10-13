@@ -1,23 +1,23 @@
 /**
- * Design tokens for the "Hand" look: one flat colour, handwritten type, nothing else.
+ * Design tokens for the "Letter" look: one soft colour, a script hand, nothing else.
  *
  * There are no cards, borders, shadows, chips or icons. A screen is paper,
  * words on it are ink, and secondary words are a lighter ink. Five papers to
  * choose from; the chosen one is remembered on the device.
  *
- * Typography comes in two flavours that share one set of drawings:
- *   - The Grug Hand TTF fonts (assets/fonts) for everything static: labels,
- *     inputs, actions. Loaded once in app/_layout.tsx.
- *   - The stroke engine (src/handwriting) for the words that should be
- *     written in front of you: the question of the moment, the screen title.
+ * Typography comes in two flavours that are the same design:
+ *   - Allura (Rob Leuschke, SIL Open Font License), a TTF, for everything
+ *     static: labels, inputs, actions. Loaded once in app/_layout.tsx.
+ *   - EMS Allure, Allura traced as pen strokes, for the words that should be
+ *     written in front of you: the question of the moment, the page title.
+ *     See src/handwriting.
  *
- * Sizes: the engine's `size` is the glyph box height, and its x-height is 40%
- * of that. The TTF's x-height is 50% of its font size. So an engine size of 30
- * matches a font size of 24. `Type` below gives the TTF sizes; `HandSize`
- * gives the engine sizes that line up with them.
+ * Both are sized by the em, so an engine `size` of 30 and a `fontSize` of 30
+ * are the same size. Script faces have a small x-height, so they run a few
+ * points bigger than a sans would.
  */
 
-export type ThemeId = 'paper' | 'night' | 'mint' | 'moss' | 'clay';
+export type ThemeId = 'linen' | 'blush' | 'sage' | 'dusk' | 'wine';
 
 export interface Palette {
   id: ThemeId;
@@ -34,41 +34,36 @@ export interface Palette {
 }
 
 export const THEMES: readonly Palette[] = [
-  { id: 'paper', name: 'paper', statusBar: 'dark', paper: '#FFFFFF', ink: '#000000', muted: '#6B6B6B', rule: '#000000' },
-  { id: 'night', name: 'night', statusBar: 'light', paper: '#000000', ink: '#FFFFFF', muted: '#A3A3A3', rule: '#FFFFFF' },
-  { id: 'mint', name: 'mint', statusBar: 'dark', paper: '#D9F0DC', ink: '#0B2E22', muted: '#4B6B5E', rule: '#0B2E22' },
-  { id: 'moss', name: 'moss', statusBar: 'light', paper: '#143F32', ink: '#EAF6EC', muted: '#A9C8B6', rule: '#EAF6EC' },
-  { id: 'clay', name: 'clay', statusBar: 'dark', paper: '#F3E6D6', ink: '#3A2414', muted: '#7B6450', rule: '#3A2414' },
+  { id: 'linen', name: 'linen', statusBar: 'dark', paper: '#FBF5EE', ink: '#3A2430', muted: '#846A74', rule: '#3A2430' },
+  { id: 'blush', name: 'blush', statusBar: 'dark', paper: '#F8E3E2', ink: '#6B2238', muted: '#9A6473', rule: '#6B2238' },
+  { id: 'sage', name: 'sage', statusBar: 'dark', paper: '#E7EDE2', ink: '#2E3A30', muted: '#66766A', rule: '#2E3A30' },
+  { id: 'dusk', name: 'dusk', statusBar: 'light', paper: '#2C2238', ink: '#F6EAEE', muted: '#B9A4B6', rule: '#F6EAEE' },
+  { id: 'wine', name: 'wine', statusBar: 'light', paper: '#4A1C2A', ink: '#FAEDE6', muted: '#CFA8AC', rule: '#FAEDE6' },
 ];
 
-export const DEFAULT_THEME: ThemeId = 'paper';
+export const DEFAULT_THEME: ThemeId = 'linen';
 
 export function paletteFor(id: ThemeId): Palette {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];
 }
 
-/**
- * Font family names as registered by expo-font (see app/_layout.tsx).
- * Pick a face by NAME, never with `fontWeight`: on native that would select
- * the wrong file.
- */
+/** Font family names as registered by expo-font (see app/_layout.tsx). */
 export const Fonts = {
-  hand: 'GrugHand',
-  handMedium: 'GrugHand-Medium',
+  script: 'Allura_400Regular',
 } as const;
 
-/** TTF font sizes. */
+/** Font sizes for static text. */
 export const Type = {
-  title: 30,
-  body: 22,
-  small: 18,
+  title: 42,
+  body: 28,
+  small: 23,
 } as const;
 
-/** Engine sizes that line up with `Type` (engine size = font size / 0.8). */
+/** Sizes for the writing engine. Same scale as `Type`. */
 export const HandSize = {
-  hero: 38,
-  title: 36,
-  body: 27,
+  hero: 46,
+  title: 44,
+  body: 30,
 } as const;
 
 export const Spacing = {

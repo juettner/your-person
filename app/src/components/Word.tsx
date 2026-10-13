@@ -1,11 +1,12 @@
 /**
  * A word you can tap. This replaces every button in the app.
  *
- *   action   underlined, like a link in a letter ("next", "save", "profile")
- *   option   muted; circled in ink when selected (a chosen interest, "day" / "evening")
- *   toggle   ink; circled when selected ("nope" / "good one", where neither is the quiet choice)
- *   quiet    plain, muted; for the least important thing on the screen ("not now")
+ *   action   underlined, like a link in a letter ("Next", "Save", "Profile")
+ *   option   muted; circled in ink when selected (a chosen interest, "Day" / "Evening")
+ *   toggle   ink; circled when selected ("Nope" / "Good one", where neither is the quiet choice)
+ *   quiet    plain, muted; for the least important thing on the screen ("Not now")
  */
+import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, ViewStyle } from 'react-native';
 import { Hand } from '@/components/Hand';
 import { Scribbled } from '@/components/Scribbled';
@@ -21,7 +22,6 @@ interface WordProps {
   /** Dims and disables while something is in flight. */
   busy?: boolean;
   size?: keyof typeof Type | number;
-  weight?: 'regular' | 'medium';
   style?: ViewStyle;
   accessibilityLabel?: string;
   accessibilityRole?: 'button' | 'radio' | 'checkbox';
@@ -35,7 +35,6 @@ export function Word({
   disabled = false,
   busy = false,
   size = 'body',
-  weight = 'regular',
   style,
   accessibilityLabel,
   accessibilityRole = 'button',
@@ -48,7 +47,11 @@ export function Word({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        // A soft click under the finger, like a pen tapping the page. Nothing on web.
+        Haptics.selectionAsync().catch(() => {});
+        onPress();
+      }}
       disabled={inactive}
       hitSlop={8}
       accessibilityRole={accessibilityRole}
@@ -57,7 +60,7 @@ export function Word({
       style={({ pressed }) => [styles.word, style, inactive && styles.inactive, pressed && styles.pressed]}
     >
       <Scribbled kind={decoration} color={p.ink} seed={title}>
-        <Hand size={size} tone={tone} weight={weight}>
+        <Hand size={size} tone={tone}>
           {title}
         </Hand>
       </Scribbled>

@@ -1,7 +1,7 @@
 /**
  * Text that writes itself, stroke by stroke, like ink appearing on paper.
  *
- * This is the port of grug's HandDrawnText. The pieces:
+ * The pieces:
  *
  *   1. Measure the available width (`onLayout`). Nothing can be laid out
  *      before we know where the lines wrap.
@@ -9,8 +9,8 @@
  *      and a duration. The plan is memoised; it only changes when the text,
  *      the width or the size does.
  *   3. Run one clock. A `requestAnimationFrame` loop stores "seconds since
- *      start" in state, throttled to grug's 15-30 fps. Every re-render
- *      derives each letter's progress from that one number.
+ *      start" in state, throttled to 15-30 fps. Every re-render derives each
+ *      letter's progress from that one number.
  *   4. Draw. One <Svg> holds every stroke as a <Path>. A stroke that hasn't
  *      started is skipped, a finished one is drawn plain, and the one being
  *      written right now uses the SVG dash trick: dasharray = its length,
@@ -19,31 +19,37 @@
  *   5. When the clock passes the plan's total duration the loop stops and the
  *      component renders static paths from then on.
  *
- * Characters the typeface has no drawing for (accents, emoji, "&") are shown
- * in the Grug Hand font at the same spot, so nothing silently disappears.
+ * Feel: with `haptics` on, the phone ticks softly as the pen starts each
+ * word and gives one light tap when the line is finished, so you feel the
+ * writing as well as see it. Nothing happens on web.
+ *
+ * Characters the typeface has no drawing for (emoji, odd symbols) are shown
+ * in the Allura font at the same spot, so nothing silently disappears.
  */
+import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LayoutChangeEvent, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { LayoutChangeEvent, Platform, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Fonts } from '@/constants/theme';
 import { framesPerSecond, PlannedGlyph, planText, TextPlan } from './plan';
+import { BASELINE_EM, BOX_EM } from './typeface';
 import { useReduceMotion } from './useReduceMotion';
 
 export interface HandwritingProps {
   text: string;
   color: string;
-  /** Glyph box height. 28 reads like body text; 40 is a headline. */
+  /** Font size in pixels. 30 reads like body text; 46 is a headline. */
   size?: number;
   /** false renders the finished text immediately. */
   animate?: boolean;
-  /** 1 is grug's quick scribble, 4 its relaxed pace. */
+  /** 1 is the default pace. 2 is twice as slow. */
   speed?: number;
   /** Seconds to wait before the pen starts. */
   delay?: number;
   /** Bump this to write the same text again. */
   replayKey?: number;
-  /** Same seed, same letter variations. Defaults to a hash of the text. */
-  seed?: number;
+  /** Tick as each word starts, tap when done. Native only. */
+  haptics?: boolean;
   align?: 'left' | 'center';
   lineHeight?: number;
   lineWidth?: number;
@@ -54,12 +60,12 @@ export interface HandwritingProps {
 export function Handwriting({
   text,
   color,
-  size = 28,
+  size = 30,
   animate = true,
-  speed = 4,
+  speed = 1,
   delay = 0,
   replayKey = 0,
-  seed,
+  haptics = false,
   align = 'left',
   lineHeight,
   lineWidth,
@@ -79,13 +85,11 @@ export function Handwriting({
       width,
       size,
       speed,
-      seed: seed ?? hashText(text),
       align,
-      lineHeight: lineHeight ?? size * 1.2,
-      characterSpacing: size * 0.1,
-      wordSpacing: size * 0.36,
+      lineHeight: lineHeight ?? size * 1.3,
+      tracking: 0,
     });
-  }, [text, width, size, speed, seed, align, lineHeight]);
+  }, [text, width, size, speed, align, lineHeight]);
 
   const shouldAnimate = animate && !reduceMotion;
   const onDoneRef = useRef(onDone);
@@ -112,32 +116,43 @@ export function Handwriting({
     const total = delay + plan.totalDuration;
     const interval = 1000 / framesPerSecond(plan.visibleCount);
     const startedAt = performance.now();
+    const tick = haptics && Platform.OS !== 'web';
     let lastFrame = -Infinity;
+    let lastWord = -1;
     let frame = 0;
     let finished = false;
 
-    const tick = (now: number) => {
+    const loop = (now: number) => {
       const seconds = (now - startedAt) / 1000;
       if (seconds >= total) {
         finished = true;
         setClock({ plan, replayKey, elapsed: Infinity });
+        if (tick) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
         onDoneRef.current?.();
         return;
+      }
+      if (tick) {
+        // The word the pen is on right now. A new one means a soft tick.
+        const word = currentWord(plan, seconds - delay);
+        if (word > lastWord) {
+          lastWord = word;
+          Haptics.selectionAsync().catch(() => {});
+        }
       }
       if (now - lastFrame >= interval) {
         lastFrame = now;
         setClock({ plan, replayKey, elapsed: seconds });
       }
-      frame = requestAnimationFrame(tick);
+      frame = requestAnimationFrame(loop);
     };
-    frame = requestAnimationFrame(tick);
+    frame = requestAnimationFrame(loop);
     return () => {
       if (!finished) cancelAnimationFrame(frame);
     };
-  }, [plan, shouldAnimate, delay, replayKey]);
+  }, [plan, shouldAnimate, delay, replayKey, haptics]);
 
-  const strokeWidth = lineWidth ?? Math.max(1.25, size * 0.05);
-  const minHeight = size * 1.2;
+  const strokeWidth = lineWidth ?? Math.max(1.1, size * 0.028);
+  const minHeight = size * BOX_EM;
 
   return (
     <View
@@ -161,11 +176,11 @@ export function Handwriting({
                   styles.fallback,
                   {
                     left: g.x,
-                    top: g.y,
+                    top: g.y - size * BASELINE_EM,
                     width: g.width,
-                    height: minHeight,
-                    lineHeight: minHeight,
-                    fontSize: size * 0.8,
+                    height: size * BOX_EM,
+                    lineHeight: size * BASELINE_EM * 1.45,
+                    fontSize: size,
                     color,
                     opacity: elapsed - delay > g.delay ? 1 : 0,
                   },
@@ -179,6 +194,16 @@ export function Handwriting({
       )}
     </View>
   );
+}
+
+/** Index of the word the pen is writing at `seconds`, or -1 before the first. */
+function currentWord(plan: TextPlan, seconds: number): number {
+  let word = -1;
+  for (const g of plan.glyphs) {
+    if (g.delay > seconds) break;
+    word = g.word;
+  }
+  return word;
 }
 
 /**
@@ -208,7 +233,7 @@ function renderGlyph(g: PlannedGlyph, elapsed: number, color: string, strokeWidt
         d={pathData(stroke.points, g.x, g.y)}
         stroke={color}
         strokeWidth={strokeWidth}
-        strokeLinecap="butt"
+        strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
         strokeDasharray={strokeProgress < 1 ? `${stroke.length} ${stroke.length}` : undefined}
@@ -227,14 +252,6 @@ function pathData(points: number[], dx: number, dy: number): string {
   return d;
 }
 
-function hashText(text: string): number {
-  let hash = 2166136261;
-  for (let i = 0; i < text.length; i += 1) {
-    hash = Math.imul(hash ^ text.charCodeAt(i), 16777619) >>> 0;
-  }
-  return hash;
-}
-
 const styles = StyleSheet.create({
   block: {
     width: '100%',
@@ -242,7 +259,7 @@ const styles = StyleSheet.create({
   },
   fallback: {
     position: 'absolute',
-    fontFamily: Fonts.hand,
+    fontFamily: Fonts.script,
     textAlign: 'center',
   },
 });

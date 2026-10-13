@@ -54,7 +54,7 @@ cd app && npm run typecheck && npm run export:web
 
 ## The look
 
-The UI is modelled on grug: one flat colour, handwritten type, and the question of the moment writes itself across the screen. The handwriting is Grug Hand by Jip van der Velde and Michel Elings (Ocho), used under their license with attribution (`app/assets/fonts/LICENSE`). `docs/ARCHITECTURE.md`, "The handwriting engine", explains the port.
+The UI takes its shape from grug: one colour, handwritten type, and the question of the moment writes itself across the screen, with a soft haptic tick as each word starts. The hand is Allura, a romantic script by Rob Leuschke, traced as pen strokes (EMS Allure) by Sheldon B. Michaels and Windell H. Oskay; both under the SIL Open Font License. `docs/ARCHITECTURE.md`, "The handwriting engine", explains how the writing works.
 
 ## Why `--legacy-peer-deps`
 

@@ -125,9 +125,9 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
     if (result.status === 'ok') {
       setLocation(result.location);
     } else if (result.status === 'denied') {
-      setLocationNote('location permission was turned down. you can write the city instead.');
+      setLocationNote('Location permission was turned down. You can write the city instead.');
     } else {
-      setLocationNote("couldn't work out a city here. write it in instead.");
+      setLocationNote("Couldn't work out a city here. Write it in instead.");
     }
     setLocating(false);
   };
@@ -144,7 +144,7 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
               {`${step + 1} of ${totalSteps}`}
             </Hand>
           )}
-          <Handwriting key={step} text={current ? `${current.label.toLowerCase()}.` : title} color={p.ink} size={HandSize.title} />
+          <Handwriting key={step} text={current ? `${current.label}.` : title} color={p.ink} size={HandSize.title} />
         </View>
 
         {current ? (
@@ -165,13 +165,13 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
           <View style={styles.fields}>
             <View style={styles.field}>
               <Hand size="small" tone="muted">
-                name
+                Name
               </Hand>
               <HandInput
                 value={name}
                 onChangeText={setName}
-                placeholder="sam"
-                autoCapitalize="none"
+                placeholder="Sam"
+                autoCapitalize="words"
                 autoCorrect={false}
                 maxLength={60}
                 accessibilityLabel="Their name"
@@ -180,23 +180,23 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
 
             <View style={styles.field}>
               <Hand size="small" tone="muted">
-                where they live
+                Where they live
               </Hand>
               <HandInput
                 value={location?.city ?? ''}
                 // Typing replaces any detected region/country: we can't trust them for a new city.
                 onChangeText={(city) => setLocation(city ? { city } : null)}
-                placeholder="minneapolis"
-                autoCapitalize="none"
+                placeholder="Minneapolis"
+                autoCapitalize="words"
                 autoCorrect={false}
                 maxLength={80}
                 accessibilityLabel="Where they live"
               />
               <View style={styles.inlineRow}>
-                <Word title={locating ? 'finding you...' : 'use my location'} variant="quiet" size="small" onPress={useMyLocation} disabled={locating} />
+                <Word title={locating ? 'Finding you...' : 'Use my location'} variant="quiet" size="small" onPress={useMyLocation} disabled={locating} />
                 {location?.region ? (
                   <Hand size="small" tone="muted">
-                    {[location.region, location.country].filter(Boolean).join(', ').toLowerCase()}
+                    {[location.region, location.country].filter(Boolean).join(', ')}
                   </Hand>
                 ) : null}
               </View>
@@ -209,11 +209,11 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
 
             <View style={styles.field}>
               <Hand size="small" tone="muted">
-                into
+                Into
               </Hand>
               {options ? (
                 <WordChoice
-                  options={options.map((o) => ({ id: o.id, label: o.label.toLowerCase() }))}
+                  options={options.map((o) => ({ id: o.id, label: o.label }))}
                   selected={interests}
                   multi
                   limit={VISIBLE_INTERESTS}
@@ -228,12 +228,12 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
 
             <View style={styles.field}>
               <Hand size="small" tone="muted">
-                lately
+                Lately
               </Hand>
               <HandInput
                 value={currentFocus}
                 onChangeText={setCurrentFocus}
-                placeholder="what's going on in their world right now?"
+                placeholder="What's going on in their world right now?"
                 multiline
                 maxLength={500}
                 accessibilityLabel="What is going on in their world lately"
@@ -250,20 +250,19 @@ export function ProfileForm({ initial, submitLabel, onSubmit, mode, title, heade
           {/* Edit mode, first page: save right away, or walk into the details. */}
           {mode === 'edit' && step === 0 ? (
             <>
-              <Word title={submitLabel} weight="medium" onPress={submit} disabled={!canSubmit} busy={submitting} />
-              {detailSteps.length > 0 && <Word title="edit details" onPress={() => setStep(1)} disabled={submitting} />}
+              <Word title={submitLabel} onPress={submit} disabled={!canSubmit} busy={submitting} />
+              {detailSteps.length > 0 && <Word title="Edit details" onPress={() => setStep(1)} disabled={submitting} />}
             </>
           ) : (
             <Word
-              title={isLast ? submitLabel : 'next'}
-              weight="medium"
+              title={isLast ? submitLabel : 'Next'}
               onPress={next}
               disabled={!canSubmit}
               busy={submitting}
               accessibilityLabel={isLast ? submitLabel : `Next, page ${step + 2} of ${totalSteps}`}
             />
           )}
-          {step > 0 && <Word title="back" variant="quiet" size="small" onPress={back} disabled={submitting} />}
+          {step > 0 && <Word title="Back" variant="quiet" size="small" onPress={back} disabled={submitting} />}
         </View>
         {step === 0 && footer}
       </ScrollView>

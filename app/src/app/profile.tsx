@@ -67,8 +67,8 @@ export default function ProfileScreen() {
     if (enabled && !on) {
       setReminderNote(
         Platform.OS === 'web'
-          ? 'reminders work in the phone app, not in the browser.'
-          : 'could not schedule it here. reminders need the installed app and notification permission.',
+          ? 'Reminders work in the phone app, not in the browser.'
+          : 'Could not schedule it here. Reminders need the installed app and notification permission.',
       );
     } else {
       setReminderNote(null);
@@ -92,8 +92,8 @@ export default function ProfileScreen() {
       const res = await api.generate(profile.id);
       setAiNote(
         res.enabled
-          ? `wrote ${res.generated} new question${res.generated === 1 ? '' : 's'} for ${profile.name}.`
-          : 'ai questions are switched off on this server.',
+          ? `Wrote ${res.generated} new question${res.generated === 1 ? '' : 's'} for ${profile.name}.`
+          : 'AI questions are switched off on this server.',
       );
       const fresh = await api.getProfile(profile.id);
       setProfile(fresh);
@@ -107,12 +107,12 @@ export default function ProfileScreen() {
   const header = (
     <View style={styles.header}>
       <View style={styles.headerRow}>
-        <Word title="back" size="small" onPress={() => router.back()} />
-        <Word title="what they said" size="small" onPress={() => router.push('/memories')} />
+        <Word title="Back" size="small" onPress={() => router.back()} />
+        <Word title="What they said" size="small" onPress={() => router.push('/memories')} />
       </View>
       <View style={styles.section}>
         <Hand size="small" tone="muted">
-          paper
+          Paper
         </Hand>
         <WordChoice
           options={THEMES.map((t) => ({ id: t.id, label: t.name }))}
@@ -153,30 +153,30 @@ export default function ProfileScreen() {
     <Screen>
       <ProfileForm
         mode="edit"
-        title="your person."
+        title="Your person."
         initial={profile}
-        submitLabel="save"
+        submitLabel="Save"
         onSubmit={save}
         header={header}
         afterCard={
           <>
             <View style={styles.section}>
               <Hand size="small" tone="muted">
-                dates that matter
+                Dates that matter
               </Hand>
               <DatesEditor dates={dates} onChange={setDates} />
             </View>
 
             <View style={styles.section}>
               <Hand size="small" tone="muted">
-                weekly nudge
+                Weekly nudge
               </Hand>
               <View style={styles.reminderRow}>
-                <Hand style={styles.reminderText}>remind me once a week</Hand>
+                <Hand style={styles.reminderText}>Remind me once a week</Hand>
                 <WordChoice
                   options={[
-                    { id: 'on', label: 'on' },
-                    { id: 'off', label: 'off' },
+                    { id: 'on', label: 'On' },
+                    { id: 'off', label: 'Off' },
                   ]}
                   selected={[reminder.enabled ? 'on' : 'off']}
                   multi={false}
@@ -185,9 +185,9 @@ export default function ProfileScreen() {
                 />
               </View>
               <Hand size="small" tone="muted">
-                {`${WEEKDAYS[reminder.weekday - 1].toLowerCase()}s at ${hour12}${ampm}. off by default, on purpose.`}
+                {`${WEEKDAYS[reminder.weekday - 1]}s at ${hour12}${ampm}. Off by default, on purpose.`}
               </Hand>
-              <Word title="change the day" variant="quiet" size="small" onPress={cycleWeekday} />
+              <Word title="Change the day" variant="quiet" size="small" onPress={cycleWeekday} />
               {reminderNote && (
                 <Hand size="small" tone="muted">
                   {reminderNote}
@@ -200,7 +200,7 @@ export default function ProfileScreen() {
           <View style={styles.footer}>
             {profile.hiddenCount > 0 && (
               <Hand size="small" tone="muted">
-                you&apos;ve hidden {profile.hiddenCount} question{profile.hiddenCount === 1 ? '' : 's'}.
+                You&apos;ve hidden {profile.hiddenCount} question{profile.hiddenCount === 1 ? '' : 's'}.
               </Hand>
             )}
             {profile.aiQuestionCount > 0 && (
@@ -208,16 +208,16 @@ export default function ProfileScreen() {
                 {profile.aiQuestionCount} question{profile.aiQuestionCount === 1 ? '' : 's'} written just for {profile.name}.
               </Hand>
             )}
-            <Word title={generating ? 'writing...' : 'write new ai questions'} size="small" onPress={refreshAi} disabled={generating} />
+            <Word title={generating ? 'Writing...' : 'Write new AI questions'} size="small" onPress={refreshAi} disabled={generating} />
             {aiNote && (
               <Hand size="small" tone="muted">
                 {aiNote}
               </Hand>
             )}
-            <Word title="start over with a new profile" variant="quiet" size="small" onPress={startOver} />
+            <Word title="Start over with a new profile" variant="quiet" size="small" onPress={startOver} />
             {/* Required by the typeface license, and deserved. */}
             <Hand size="small" tone="muted" style={styles.credit}>
-              the handwriting is grug hand, by jip van der velde and michel elings. handdrawn.software
+              The hand is Allura, by Rob Leuschke, traced as pen strokes by Sheldon B. Michaels and Windell H. Oskay. SIL Open Font License.
             </Hand>
           </View>
         }

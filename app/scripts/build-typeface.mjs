@@ -1,37 +1,155 @@
 #!/usr/bin/env node
 /**
- * Turns the HandDrawnFont stroke artwork (Grug Hand, by Jip van der Velde and
- * Michel Elings) into the compact JSON the app ships in
- * `src/handwriting/grug-hand.json`.
+ * Turns a single-line SVG font into the compact JSON the app ships in
+ * `src/handwriting/typeface.json`.
  *
- * Why a build step: the upstream file is ~480 KB of UUIDs and 16-digit floats.
- * We drop the ids, store points as integers in a 0..1000 grid, and simplify
- * each stroke with Ramer-Douglas-Peucker. The result is ~10x smaller and
- * draws identically at phone sizes.
+ * A single-line (or "stroke") font is a font where each glyph is the path a
+ * pen takes, not the outline of a filled shape. They were made for pen
+ * plotters and engravers, which is exactly what we need: to animate a letter
+ * being written you draw its path from the start up to a growing length.
+ *
+ * The app uses EMS Allure, a single-line version of Allura (Rob Leuschke)
+ * made by Sheldon B. Michaels and Windell H. Oskay, SIL Open Font License.
+ * It ships with Inkscape's Hershey Text extension:
+ *   https://gitlab.com/inkscape/extensions/-/tree/master/svg_fonts
  *
  * Usage:
- *   git clone https://github.com/jipvandervelde/HandDrawnFont /tmp/HandDrawnFont
- *   node scripts/build-typeface.mjs /tmp/HandDrawnFont/Sources/HandDrawnFont/Resources/hand-drawn-typeface.json
+ *   node scripts/build-typeface.mjs /path/to/EMSAllure.svg
+ *
+ * What it does: parses each <glyph>, flattens curves into short line
+ * segments, flips y so it points down like on screen, rounds to integers in
+ * font units, and simplifies each stroke with Ramer-Douglas-Peucker.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const GRID = 1000; // points are stored as integers on a 1000 x 1000 grid
-const EPSILON = 1.5; // RDP tolerance in grid units (~0.6 canvas px of a 400-wide canvas)
+const EPSILON = 1.5; // RDP tolerance in font units (1000 per em)
+const CURVE_STEPS = 10;
 
 const [, , sourcePath] = process.argv;
 if (!sourcePath) {
-  console.error('usage: build-typeface.mjs <hand-drawn-typeface.json>');
+  console.error('usage: build-typeface.mjs <font.svg>');
   process.exit(1);
 }
+const svg = readFileSync(sourcePath, 'utf8');
 
-const source = JSON.parse(readFileSync(sourcePath, 'utf8'));
+const attr = (tag, name) => {
+  const m = tag.match(new RegExp(`\\s${name}="([^"]*)"`));
+  return m ? m[1] : undefined;
+};
+const decode = (s) =>
+  s
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&amp;/g, '&')
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
 
-/** Ramer-Douglas-Peucker: keep the points that matter, drop the ones on a straight-ish line. */
+const fontTag = svg.match(/<font\b[^>]*>/)[0];
+const faceTag = svg.match(/<font-face\b[^>]*>/)[0];
+const name = attr(faceTag, 'font-family');
+const upm = Number(attr(faceTag, 'units-per-em') ?? 1000);
+const ascent = Number(attr(faceTag, 'ascent') ?? 800);
+const descent = Number(attr(faceTag, 'descent') ?? -200);
+const xHeight = Number(attr(faceTag, 'x-height') ?? 500);
+const capHeight = Number(attr(faceTag, 'cap-height') ?? 700);
+const defaultAdvance = Number(attr(fontTag, 'horiz-adv-x') ?? upm / 2);
+
+/** Parses SVG path data (M/L/C/Q/Z, absolute or relative) into polylines, one per pen-down. */
+function pathToStrokes(d) {
+  const tokens = d.match(/[MLHVCSQTAZmlhvcsqtaz]|-?\d*\.?\d+(?:e-?\d+)?/g) ?? [];
+  const strokes = [];
+  let current = null;
+  let x = 0;
+  let y = 0;
+  let startX = 0;
+  let startY = 0;
+  let cmd = '';
+  let i = 0;
+  const num = () => Number(tokens[i++]);
+  const begin = (px, py) => {
+    current = [px, py];
+    strokes.push(current);
+    startX = px;
+    startY = py;
+  };
+  const line = (px, py) => {
+    if (!current) begin(x, y);
+    current.push(px, py);
+  };
+  const cubic = (x1, y1, x2, y2, px, py) => {
+    for (let s = 1; s <= CURVE_STEPS; s += 1) {
+      const t = s / CURVE_STEPS;
+      const mt = 1 - t;
+      line(
+        mt * mt * mt * x + 3 * mt * mt * t * x1 + 3 * mt * t * t * x2 + t * t * t * px,
+        mt * mt * mt * y + 3 * mt * mt * t * y1 + 3 * mt * t * t * y2 + t * t * t * py,
+      );
+    }
+  };
+  while (i < tokens.length) {
+    if (/[A-Za-z]/.test(tokens[i])) cmd = tokens[i++];
+    const rel = cmd === cmd.toLowerCase();
+    const dx = rel ? x : 0;
+    const dy = rel ? y : 0;
+    switch (cmd.toUpperCase()) {
+      case 'M': {
+        x = num() + dx;
+        y = num() + dy;
+        begin(x, y);
+        cmd = rel ? 'l' : 'L'; // further pairs after M are implicit lineto
+        break;
+      }
+      case 'L': {
+        x = num() + dx;
+        y = num() + dy;
+        line(x, y);
+        break;
+      }
+      case 'H': {
+        x = num() + dx;
+        line(x, y);
+        break;
+      }
+      case 'V': {
+        y = num() + dy;
+        line(x, y);
+        break;
+      }
+      case 'C': {
+        const x1 = num() + dx, y1 = num() + dy, x2 = num() + dx, y2 = num() + dy, px = num() + dx, py = num() + dy;
+        cubic(x1, y1, x2, y2, px, py);
+        x = px;
+        y = py;
+        break;
+      }
+      case 'Q': {
+        const qx = num() + dx, qy = num() + dy, px = num() + dx, py = num() + dy;
+        cubic(x + (2 / 3) * (qx - x), y + (2 / 3) * (qy - y), px + (2 / 3) * (qx - px), py + (2 / 3) * (qy - py), px, py);
+        x = px;
+        y = py;
+        break;
+      }
+      case 'Z': {
+        line(startX, startY);
+        x = startX;
+        y = startY;
+        current = null;
+        break;
+      }
+      default:
+        throw new Error(`unsupported path command ${cmd}`);
+    }
+  }
+  return strokes;
+}
+
 function simplify(points, epsilon) {
   if (points.length < 3) return points;
-  const [first] = points;
+  const first = points[0];
   const last = points[points.length - 1];
   let maxDistance = 0;
   let index = 0;
@@ -49,46 +167,49 @@ function simplify(points, epsilon) {
 }
 
 function perpendicularDistance(p, a, b) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
   const length = Math.hypot(dx, dy);
-  if (length === 0) return Math.hypot(p.x - a.x, p.y - a.y);
-  return Math.abs(dy * p.x - dx * p.y + b.x * a.y - b.y * a.x) / length;
+  if (length === 0) return Math.hypot(p[0] - a[0], p[1] - a[1]);
+  return Math.abs(dy * p[0] - dx * p[1] + b[0] * a[1] - b[1] * a[0]) / length;
 }
 
-const round = (v) => Math.round(v * GRID);
+const glyphs = {};
+for (const tag of svg.match(/<glyph\b[^>]*\/?>/g) ?? []) {
+  const unicode = attr(tag, 'unicode');
+  if (unicode === undefined) continue;
+  const key = decode(unicode);
+  if ([...key].length !== 1) continue;
+  const adv = Math.round(Number(attr(tag, 'horiz-adv-x') ?? defaultAdvance));
+  const d = attr(tag, 'd');
+  const strokes = d
+    ? pathToStrokes(decode(d))
+        .map((flat) => {
+          const pts = [];
+          for (let i = 0; i < flat.length; i += 2) pts.push([Math.round(flat[i]), Math.round(-flat[i + 1])]); // y down
+          return simplify(pts, EPSILON);
+        })
+        .filter((pts) => pts.length > 1)
+        .map((pts) => pts.flat())
+    : [];
+  glyphs[key] = { adv, s: strokes };
+}
 
-const glyphs = source.glyphs
-  .filter((g) => g.key.length === 1) // letters, digits, punctuation; skip named icons
-  .map((g) => {
-    const m = g.metrics;
-    const strokes = g.strokes
-      .map((s) => simplify(s.points.map((p) => ({ x: round(p.x), y: round(p.y) })), EPSILON))
-      .filter((pts) => pts.length > 1)
-      .map((pts) => pts.flatMap((p) => [p.x, p.y]));
-    return {
-      k: g.key,
-      v: g.variationIndex,
-      b: [round(m.boundsX), round(m.boundsY), round(m.boundsWidth), round(m.boundsHeight)],
-      bl: round(m.boundsY + m.baselineY), // baseline as an absolute canvas position
-      xh: round(m.boundsY + m.xHeightY), // x-height, same
-      s: strokes,
-    };
-  })
-  .sort((a, b) => (a.k === b.k ? a.v - b.v : a.k < b.k ? -1 : 1));
-
-const canvas = source.glyphs[0];
 const out = {
-  attribution: 'Grug Hand drawings by Jip van der Velde and Michel Elings at Ocho. https://handdrawn.software',
-  license: 'Apache-2.0 with Commons Clause. See assets/fonts/LICENSE and NOTICE.',
-  grid: GRID,
-  canvas: [canvas.canvasWidth, canvas.canvasHeight],
+  name,
+  license: 'SIL Open Font License 1.1. See src/handwriting/OFL.txt.',
+  source: 'EMS Allure (single-line Allura) from the Inkscape Hershey Text extension',
+  upm,
+  ascent,
+  descent,
+  xHeight,
+  capHeight,
   glyphs,
 };
 
 const here = dirname(fileURLToPath(import.meta.url));
-const target = resolve(here, '../src/handwriting/grug-hand.json');
+const target = resolve(here, '../src/handwriting/typeface.json');
 writeFileSync(target, JSON.stringify(out));
-
-const points = glyphs.reduce((n, g) => n + g.s.reduce((m, s) => m + s.length / 2, 0), 0);
-console.log(`wrote ${target}: ${glyphs.length} glyphs, ${points} points, ${(JSON.stringify(out).length / 1024).toFixed(0)} KB`);
+const count = Object.keys(glyphs).length;
+const points = Object.values(glyphs).reduce((n, g) => n + g.s.reduce((m, s) => m + s.length / 2, 0), 0);
+console.log(`wrote ${target}: ${name}, ${count} glyphs, ${points} points, ${(JSON.stringify(out).length / 1024).toFixed(0)} KB`);

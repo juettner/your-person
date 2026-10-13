@@ -29,11 +29,11 @@ export function FollowUpFields({ interest, answers, onChange }: FollowUpFieldsPr
         return (
           <View key={f.id} style={styles.field}>
             <Hand size="small" tone="muted">
-              {f.prompt.toLowerCase()}
+              {f.prompt}
             </Hand>
             {f.kind === 'choice' ? (
               <WordChoice
-                options={(f.options ?? []).map((o) => ({ id: o, label: o.toLowerCase() }))}
+                options={(f.options ?? []).map((o) => ({ id: o, label: o }))}
                 selected={Array.isArray(value) ? value : typeof value === 'string' && value ? [value] : []}
                 multi={f.multi ?? false}
                 onChange={(ids) => set(f.id, f.multi ? ids : (ids[0] ?? ''))}
@@ -42,9 +42,9 @@ export function FollowUpFields({ interest, answers, onChange }: FollowUpFieldsPr
               <HandInput
                 value={typeof value === 'string' ? value : ''}
                 onChangeText={(v) => set(f.id, v)}
-                placeholder={f.placeholder?.toLowerCase()}
+                placeholder={f.placeholder}
                 maxLength={120}
-                autoCapitalize="none"
+                autoCapitalize="sentences"
                 accessibilityLabel={f.prompt}
               />
             )}

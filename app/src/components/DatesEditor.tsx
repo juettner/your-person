@@ -11,7 +11,7 @@ import { Word } from '@/components/Word';
 import { Spacing } from '@/constants/theme';
 import type { ImportantDate } from '@/lib/api';
 
-const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 interface DatesEditorProps {
   dates: ImportantDate[];
@@ -42,10 +42,10 @@ export function DatesEditor({ dates, onChange }: DatesEditorProps) {
       {dates.map((date, i) => (
         <View key={`${date.label}-${date.month}-${date.day}-${i}`} style={styles.row}>
           <Hand style={styles.rowText}>
-            {date.label.toLowerCase()}
+            {date.label}
             <Hand tone="muted">{`  ${MONTHS[date.month - 1]} ${date.day}`}</Hand>
           </Hand>
-          <Word title="remove" variant="quiet" size="small" onPress={() => remove(i)} accessibilityLabel={`Remove ${date.label}`} />
+          <Word title="Remove" variant="quiet" size="small" onPress={() => remove(i)} accessibilityLabel={`Remove ${date.label}`} />
         </View>
       ))}
 
@@ -53,16 +53,16 @@ export function DatesEditor({ dates, onChange }: DatesEditorProps) {
         <HandInput
           value={label}
           onChangeText={setLabel}
-          placeholder="mom's birthday"
+          placeholder="Mom's birthday"
           maxLength={60}
-          autoCapitalize="none"
+          autoCapitalize="sentences"
           style={styles.labelInput}
           accessibilityLabel="Date label"
         />
-        <HandInput value={month} onChangeText={setMonth} placeholder="mm" keyboardType="number-pad" maxLength={2} style={styles.numInput} accessibilityLabel="Month" />
-        <HandInput value={day} onChangeText={setDay} placeholder="dd" keyboardType="number-pad" maxLength={2} style={styles.numInput} accessibilityLabel="Day" />
+        <HandInput value={month} onChangeText={setMonth} placeholder="MM" keyboardType="number-pad" maxLength={2} style={styles.numInput} accessibilityLabel="Month" />
+        <HandInput value={day} onChangeText={setDay} placeholder="DD" keyboardType="number-pad" maxLength={2} style={styles.numInput} accessibilityLabel="Day" />
       </View>
-      <Word title="add date" size="small" onPress={add} disabled={!canAdd} />
+      <Word title="Add date" size="small" onPress={add} disabled={!canAdd} />
     </View>
   );
 }

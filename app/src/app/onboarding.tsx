@@ -17,7 +17,7 @@ export default function OnboardingScreen() {
 
   return (
     <Screen>
-      <ProfileForm mode="create" title="tell me about your person." submitLabel="deal me in" onSubmit={create} />
+      <ProfileForm mode="create" title="Tell me about your person." submitLabel="Deal me in" onSubmit={create} />
     </Screen>
   );
 }

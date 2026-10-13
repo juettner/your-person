@@ -56,8 +56,8 @@ export default function MemoriesScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <Word title="back" size="small" onPress={() => router.back()} />
-        <Handwriting text="what they said." color={p.ink} size={HandSize.title} />
+        <Word title="Back" size="small" onPress={() => router.back()} />
+        <Handwriting text="What they said." color={p.ink} size={HandSize.title} />
       </View>
 
       {error && <Hand tone="muted">{error}</Hand>}
@@ -68,8 +68,8 @@ export default function MemoriesScreen() {
         </View>
       ) : memories.length === 0 ? (
         <View style={styles.empty}>
-          <Hand>nothing yet.</Hand>
-          <Hand tone="muted">after you ask a question, jot down what they said. it shows up here, and it makes the next questions better.</Hand>
+          <Hand>Nothing yet.</Hand>
+          <Hand tone="muted">After you ask a question, jot down what they said. It shows up here, and it makes the next questions better.</Hand>
         </View>
       ) : (
         <FlatList
@@ -82,15 +82,15 @@ export default function MemoriesScreen() {
             <View style={styles.memory}>
               {item.questionText ? (
                 <Hand size="small" tone="muted">
-                  {item.questionText.toLowerCase()}
+                  {item.questionText}
                 </Hand>
               ) : null}
               <Hand>{item.text}</Hand>
               <View style={styles.footer}>
                 <Hand size="small" tone="muted">
-                  {new Date(item.createdAt).toLocaleDateString().toLowerCase()}
+                  {new Date(item.createdAt).toLocaleDateString()}
                 </Hand>
-                <Word title="remove" variant="quiet" size="small" onPress={() => remove(item)} />
+                <Word title="Remove" variant="quiet" size="small" onPress={() => remove(item)} />
               </View>
             </View>
           )}

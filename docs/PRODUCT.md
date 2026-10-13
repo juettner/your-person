@@ -24,13 +24,13 @@ The user is one half of the couple. They set up a profile *about* their person. 
 
 | Screen | Purpose | Notes |
 | --- | --- | --- |
-| **Onboarding** | Set up the partner profile | A few handwritten pages. Page 1: name, circle interests from a list of words, one line: "what's going on in their world right now?" Then one page per chosen interest that goes deeper: sports asks which sport, then which team, then fan or player; music asks genres, then artists, then live shows or headphones. Every deeper answer is optional. |
-| **Today** | Show questions | A plain sheet of colour. "ask sam." in the corner, and the question writes itself across the middle of the screen in handwriting, like someone on the other side is writing it for you. "nope" hides it, "good one" keeps it coming back, "next" advances. Three per batch, then deal three more. |
-| **Profile** | Update the profile and pick a paper | Same pages as onboarding, pre-filled. Save from the first page or walk into the details. Five papers to choose from: paper, night, mint, moss, clay. |
+| **Onboarding** | Set up the partner profile | A few handwritten pages. Page 1: name, circle interests from a list of words, one line: "What's going on in their world right now?" Then one page per chosen interest that goes deeper: Sports asks which sport, then which team, then fan or player; Music asks genres, then artists, then live shows or headphones. Every deeper answer is optional. |
+| **Today** | Show questions | A sheet of soft colour, like a letter. "Ask Sam." in the corner, and the question writes itself across the middle of the screen in a script hand, with a soft tick under your finger as each word starts. "Nope" hides it, "Good one" keeps it coming back, "Next" advances. Three per batch, then deal three more. |
+| **Profile** | Update the profile and pick a paper | Same pages as onboarding, pre-filled. Save from the first page or walk into the details. Five papers to choose from: linen, blush, sage, dusk, wine. |
 
 ### The look
 
-Modelled on grug (Ocho, Apple Design Award 2026): a single flat colour, handwritten type, nothing else. No cards, borders, shadows, icons or buttons; actions are underlined words, chosen things are circled. The handwriting is Grug Hand, which grug's makers published with their stroke engine; `docs/ARCHITECTURE.md`, "The handwriting engine", explains how the writing animation works.
+The shape comes from grug (Ocho, Apple Design Award 2026): a single colour, handwritten type, nothing else. The feel is a letter rather than a cave wall: a romantic script (Allura) on warm papers, written in front of you one letter at a time, with the phone ticking softly as the pen moves. No cards, borders, shadows, icons or buttons; actions are underlined words, chosen things are circled. `docs/ARCHITECTURE.md`, "The handwriting engine", explains how the writing animation works.
 
 ### Where they live
 

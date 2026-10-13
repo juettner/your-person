@@ -7,7 +7,7 @@ import { usePalette } from '@/components/ThemeProvider';
 import { HandSize } from '@/constants/theme';
 import { Handwriting } from '@/handwriting/Handwriting';
 
-export function Thinking({ text = 'one moment.' }: { text?: string }) {
+export function Thinking({ text = 'One moment.' }: { text?: string }) {
   const p = usePalette();
   const [replayKey, setReplayKey] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -22,7 +22,7 @@ export function Thinking({ text = 'one moment.' }: { text?: string }) {
       text={text}
       color={p.muted}
       size={HandSize.body}
-      speed={6}
+      speed={1.5}
       replayKey={replayKey}
       onDone={() => {
         timer.current = setTimeout(() => setReplayKey((k) => k + 1), 900);

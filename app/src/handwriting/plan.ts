@@ -4,42 +4,43 @@
  * The output is a flat list of placed glyphs with a start time and a duration.
  * Rendering a frame is then trivial: for each glyph, progress = (elapsed -
  * delay) / duration, clamped to 0..1, and draw that much of its strokes.
- * One clock for the whole text, no per-letter timers. That's the grug approach
- * and it is what keeps 60 letters cheap to animate.
+ * One clock for the whole text, no per-letter timers. That is what keeps
+ * sixty letters cheap to animate.
  *
- * Timing, copied from the HandDrawnFont package: a letter takes its path
- * length / 12,000 canvas units per second, clamped to 8..18 ms, times a speed
- * multiplier. A space adds 8 ms, a line break 12 ms. At speed 1 that is the
- * "quick scribble"; grug's site uses speed 4, which is where the slow flow
- * you noticed comes from.
+ * Timing: a letter takes its path length divided by a pen speed in font
+ * units per second, clamped so that a dot is not instant and a capital with
+ * a flourish does not drag. Longer, loopier letters take longer, which is
+ * what makes a script feel written rather than typed. A space is a short
+ * pause, a line break a longer one. `speed` scales all of it: 1 is the
+ * default pace, 2 is twice as slow.
  */
-import { pickVariation, scaleGlyph, ScaledGlyph, variationsFor } from './typeface';
+import { BASELINE_EM, BOX_EM, glyphFor, ScaledGlyph, scaleGlyph, typeface } from './typeface';
 
 export interface PlanOptions {
   /** Available width in pixels. Words wrap when they don't fit. */
   width: number;
-  /** Glyph box height. The x-height is 40% of this. */
+  /** Font size: the em, in pixels. */
   size: number;
-  /** 1 = grug's quick scribble, 4 = the relaxed pace. */
+  /** 1 = the default pace. Bigger is slower. */
   speed: number;
-  /** Stable variation choices. Same seed, same letters. */
-  seed: number;
   align: 'left' | 'center';
   /** Distance between baselines. */
   lineHeight: number;
-  characterSpacing: number;
-  wordSpacing: number;
+  /** Extra pixels between letters. 0 keeps a connected script joined up. */
+  tracking: number;
 }
 
 export interface PlannedGlyph {
   id: number;
   character: string;
-  /** Top-left of the glyph box in text pixels. */
+  /** Pen origin in text pixels: x at the left of the advance box, y on the baseline. */
   x: number;
   y: number;
   /** null when the typeface has no drawing for this character; it is shown in the font instead. */
   glyph: ScaledGlyph | null;
   width: number;
+  /** Which word this letter belongs to, counted from 0. Used for the haptic tick at each new word. */
+  word: number;
   /** Seconds after the start of the animation when the pen reaches this letter. */
   delay: number;
   /** Seconds the pen spends on it. */
@@ -55,18 +56,18 @@ export interface TextPlan {
   visibleCount: number;
 }
 
-const MIN_GLYPH_SECONDS = 0.008;
-const MAX_GLYPH_SECONDS = 0.018;
-const CANVAS_UNITS_PER_SECOND = 12_000;
-const SPACE_SECONDS = 0.008;
-const LINE_BREAK_SECONDS = 0.012;
+const UNITS_PER_SECOND = 18_000;
+const MIN_GLYPH_SECONDS = 0.03;
+const MAX_GLYPH_SECONDS = 0.3;
+const SPACE_SECONDS = 0.06;
+const LINE_BREAK_SECONDS = 0.12;
 
-function glyphSeconds(canvasLength: number, speed: number): number {
-  const unscaled = Math.min(MAX_GLYPH_SECONDS, Math.max(MIN_GLYPH_SECONDS, canvasLength / CANVAS_UNITS_PER_SECOND));
+function glyphSeconds(unitLength: number, speed: number): number {
+  const unscaled = Math.min(MAX_GLYPH_SECONDS, Math.max(MIN_GLYPH_SECONDS, unitLength / UNITS_PER_SECOND));
   return unscaled * speed;
 }
 
-/** Frame rate grug uses: 30 fps for a few letters, easing to 15 fps for long text. Nobody can tell, and it saves battery. */
+/** Frame rate: 30 fps for a few letters, easing to 15 fps for long text. Nobody can tell, and it saves battery. */
 export function framesPerSecond(visibleCount: number): number {
   if (visibleCount <= 5) return 30;
   if (visibleCount >= 40) return 15;
@@ -81,31 +82,32 @@ interface Measured {
 }
 
 export function planText(text: string, options: PlanOptions): TextPlan {
-  const { width: maxWidth, size, speed, seed, align, lineHeight, characterSpacing, wordSpacing } = options;
+  const { width: maxWidth, size, speed, align, lineHeight, tracking } = options;
+  // Connected letters start a little left of their origin; give the first one room.
+  const inset = size * 0.12;
+  const usable = Math.max(1, maxWidth - inset * 2);
+  const spaceWidth = (glyphFor(' ')?.adv ?? 378) * (size / typeface.upm);
   const glyphs: PlannedGlyph[] = [];
   let delay = 0;
   let visibleCount = 0;
-  let characterIndex = 0;
   let line = 0;
   let x = 0;
-  /** Glyphs on the current line, so we can centre the line once we know its width. */
   let lineStart = 0;
+  let wordCount = 0;
 
   const measure = (character: string): Measured => {
-    const variations = variationsFor(character);
-    if (variations.length === 0) {
-      return { character, glyph: null, width: size * 0.5, duration: glyphSeconds(0, speed) };
+    const raw = glyphFor(character);
+    if (!raw) {
+      return { character, glyph: null, width: size * 0.45, duration: glyphSeconds(0, speed) };
     }
-    const glyph = scaleGlyph(pickVariation(variations, characterIndex, seed), size);
-    return { character, glyph, width: glyph.width, duration: glyphSeconds(glyph.canvasLength, speed) };
+    const glyph = scaleGlyph(character, raw, size);
+    return { character, glyph, width: glyph.advance + tracking, duration: glyphSeconds(glyph.unitLength, speed) };
   };
 
   const finishLine = () => {
-    if (align === 'center') {
-      const lineWidth = x - (x > 0 ? wordSpacing : 0);
-      const shift = Math.max(0, (maxWidth - lineWidth) / 2);
-      for (let i = lineStart; i < glyphs.length; i += 1) glyphs[i].x += shift;
-    }
+    const lineWidth = x;
+    const shift = inset + (align === 'center' ? Math.max(0, (usable - lineWidth) / 2) : 0);
+    for (let i = lineStart; i < glyphs.length; i += 1) glyphs[i].x += shift;
     lineStart = glyphs.length;
     line += 1;
     x = 0;
@@ -115,34 +117,32 @@ export function planText(text: string, options: PlanOptions): TextPlan {
   explicitLines.forEach((explicitLine, lineNumber) => {
     const words = explicitLine.trim().length > 0 ? explicitLine.trim().split(/\s+/) : [];
     words.forEach((word, wordNumber) => {
-      const measured: Measured[] = [];
-      for (const character of Array.from(word)) {
-        measured.push(measure(character));
-        characterIndex += 1;
-      }
-      const wordWidth = measured.reduce((sum, m) => sum + m.width, 0) + characterSpacing * (measured.length - 1);
-      if (x > 0 && x + wordWidth > maxWidth) finishLine();
+      const measured = Array.from(word).map(measure);
+      const wordWidth = measured.reduce((sum, m) => sum + m.width, 0);
+      if (x > 0 && x + wordWidth > usable) finishLine();
 
-      measured.forEach((m, i) => {
+      measured.forEach((m) => {
         // A single word longer than the line still has to go somewhere: break inside it.
-        if (x > 0 && x + m.width > maxWidth) finishLine();
+        if (x > 0 && x + m.width > usable) finishLine();
         if (m.glyph) visibleCount += 1;
         glyphs.push({
           id: glyphs.length,
           character: m.character,
           x,
-          y: line * lineHeight,
+          y: line * lineHeight + size * BASELINE_EM,
           glyph: m.glyph,
           width: m.width,
+          word: wordCount,
           delay,
           duration: m.duration,
         });
         delay += m.duration;
-        x += m.width + (i < measured.length - 1 ? characterSpacing : 0);
+        x += m.width;
       });
+      wordCount += 1;
 
       if (wordNumber < words.length - 1) {
-        x += wordSpacing;
+        x += spaceWidth;
         delay += SPACE_SECONDS * speed;
       }
     });
@@ -156,9 +156,10 @@ export function planText(text: string, options: PlanOptions): TextPlan {
   return {
     glyphs,
     width: maxWidth,
-    // `line` is now the number of lines. The last line needs its full box (1.2 x size), not just the pitch.
-    height: Math.max(0, line - 1) * lineHeight + size * 1.2,
+    // `line` is now the number of lines. The last line needs its whole box, not just the pitch.
+    height: Math.max(0, line - 1) * lineHeight + size * BOX_EM,
     totalDuration: delay,
     visibleCount,
   };
 }
+

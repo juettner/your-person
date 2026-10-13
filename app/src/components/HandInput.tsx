@@ -25,7 +25,7 @@ export const HandInput = forwardRef<TextInput, HandInputProps>(function HandInpu
         cursorColor={p.ink}
         style={[
           styles.input,
-          { color: p.ink, fontSize, lineHeight: Math.round(fontSize * 1.35) },
+          { color: p.ink, fontSize, lineHeight: Math.round(fontSize * 1.3) },
           multiline && styles.multiline,
         ]}
       />
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   input: {
-    fontFamily: Fonts.hand,
+    fontFamily: Fonts.script,
     paddingVertical: 8,
     paddingHorizontal: 0,
     minHeight: 44,

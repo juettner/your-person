@@ -1,5 +1,5 @@
 /**
- * Static handwritten text: the Grug Hand font with the app's sizes baked in.
+ * Static handwritten text: the Allura script with the app's sizes baked in.
  * Use this for anything that doesn't need to be written in front of you.
  */
 import type { PropsWithChildren } from 'react';
@@ -10,12 +10,11 @@ import { Fonts, Type } from '@/constants/theme';
 interface HandProps extends Omit<TextProps, 'style'> {
   size?: keyof typeof Type | number;
   tone?: 'ink' | 'muted';
-  weight?: 'regular' | 'medium';
   align?: 'left' | 'center' | 'right';
   style?: TextStyle | TextStyle[];
 }
 
-export function Hand({ size = 'body', tone = 'ink', weight = 'regular', align = 'left', style, children, ...rest }: PropsWithChildren<HandProps>) {
+export function Hand({ size = 'body', tone = 'ink', align = 'left', style, children, ...rest }: PropsWithChildren<HandProps>) {
   const p = usePalette();
   const fontSize = typeof size === 'number' ? size : Type[size];
   return (
@@ -24,9 +23,9 @@ export function Hand({ size = 'body', tone = 'ink', weight = 'regular', align = 
       style={[
         styles.text,
         {
-          fontFamily: weight === 'medium' ? Fonts.handMedium : Fonts.hand,
+          fontFamily: Fonts.script,
           fontSize,
-          lineHeight: Math.round(fontSize * 1.35),
+          lineHeight: Math.round(fontSize * 1.3),
           color: tone === 'muted' ? p.muted : p.ink,
           textAlign: align,
         },
@@ -40,7 +39,6 @@ export function Hand({ size = 'body', tone = 'ink', weight = 'regular', align = 
 
 const styles = StyleSheet.create({
   text: {
-    // Grug Hand draws lowercase for everything; keep the metal out of it.
-    letterSpacing: 0.2,
+    letterSpacing: 0,
   },
 });

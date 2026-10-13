@@ -32,24 +32,24 @@ type Status = 'loading' | 'ready' | 'error';
 
 /** The small line above a card that says what to do with it. */
 const KIND_LABEL: Record<Exclude<PromptKind, 'question'>, string> = {
-  appreciation: 'say it out loud',
-  bid: 'today',
-  dream: 'go deeper',
-  stress: 'just listen',
+  appreciation: 'Say it out loud',
+  bid: 'Today',
+  dream: 'Go deeper',
+  stress: 'Just listen',
 };
 
 function hintFor(prompt: Prompt, askName: string): string {
   switch (prompt.kind) {
     case 'appreciation':
-      return `not a question. tell ${askName}, in your own words.`;
+      return `Not a question. Tell ${askName}, in your own words.`;
     case 'bid':
-      return 'one small thing. good one if it landed.';
+      return 'One small thing. Good one if it landed.';
     case 'dream':
-      return 'a bigger one. no rush, and no fixing.';
+      return 'A bigger one. No rush, and no fixing.';
     case 'stress':
-      return "listen, take their side, don't solve it.";
+      return "Listen, take their side, don't solve it.";
     default:
-      return prompt.source === 'ai' ? `written for ${askName}. rate it to teach the deck.` : 'rate it so your deck gets better.';
+      return prompt.source === 'ai' ? `Written for ${askName}. Rate it to teach the deck.` : 'Rate it so your deck gets better.';
   }
 }
 
@@ -175,7 +175,7 @@ export default function TodayScreen() {
   const nudge = upcoming
     ? `${upcoming.label} is ${upcoming.daysAway === 0 ? 'today' : upcoming.daysAway === 1 ? 'tomorrow' : `in ${upcoming.daysAway} days`}.`
     : nudges?.reviewDetails
-      ? `it's been a while. still true? give ${askName}'s page a once-over.`
+      ? `It's been a while. Still true? Give ${askName}'s page a once-over.`
       : null;
 
   return (
@@ -184,15 +184,15 @@ export default function TodayScreen() {
         {/* Top: who we're asking, day or evening, and the way to the profile. */}
         <View style={styles.topRow}>
           <Hand size="small" tone="muted">
-            {askName ? `ask ${askName}.` : ' '}
+            {askName ? `Ask ${askName}.` : ' '}
           </Hand>
-          <Word title="profile" size="small" onPress={() => router.push('/profile')} />
+          <Word title="Profile" size="small" onPress={() => router.push('/profile')} />
         </View>
         <View style={styles.modeRow}>
           <WordChoice
             options={[
-              { id: 'day', label: 'day' },
-              { id: 'evening', label: 'evening' },
+              { id: 'day', label: 'Day' },
+              { id: 'evening', label: 'Evening' },
             ]}
             selected={[mode]}
             multi={false}
@@ -212,17 +212,17 @@ export default function TodayScreen() {
 
         {status === 'error' && (
           <View style={styles.center}>
-            <Handwriting text="hmm." color={p.ink} size={HandSize.title} />
+            <Handwriting text="Hmm." color={p.ink} size={HandSize.title} />
             <Hand tone="muted">{error}</Hand>
-            <Word title="try again" onPress={() => profileId && loadBatch(profileId, mode)} />
+            <Word title="Try again" onPress={() => profileId && loadBatch(profileId, mode)} />
           </View>
         )}
 
         {status === 'ready' && prompts.length === 0 && (
           <View style={styles.center}>
-            <Handwriting text="no cards left." color={p.ink} size={HandSize.title} />
-            <Hand tone="muted">add a few more interests to the profile to unlock more.</Hand>
-            <Word title="edit profile" onPress={() => router.push('/profile')} />
+            <Handwriting text="No cards left." color={p.ink} size={HandSize.title} />
+            <Hand tone="muted">Add a few more interests to the profile to unlock more.</Hand>
+            <Word title="Edit profile" onPress={() => router.push('/profile')} />
           </View>
         )}
 
@@ -231,14 +231,15 @@ export default function TodayScreen() {
             {/* The prompt, written in front of you. Long ones get a smaller pen. */}
             <View style={styles.cardArea}>
               <Hand size="small" tone="muted">
-                {current.kind === 'question' ? (current.interest ?? 'just because') : KIND_LABEL[current.kind]}
+                {current.kind === 'question' ? (current.interest ?? 'Just because') : KIND_LABEL[current.kind]}
               </Hand>
               <Handwriting
                 key={current.id}
                 text={current.text}
                 color={p.ink}
-                size={current.text.length > 110 ? HandSize.body + 3 : HandSize.hero}
+                size={current.text.length > 72 ? HandSize.body + 6 : HandSize.hero}
                 delay={0.35}
+                haptics
                 onDone={() => setWritten(true)}
                 style={styles.prompt}
               />
@@ -252,14 +253,14 @@ export default function TodayScreen() {
               <View style={styles.memoryRow}>
                 {savedMemoryFor === current.id ? (
                   <Hand size="small" tone="muted">
-                    saved. it will shape the next cards.
+                    Saved. It will shape the next cards.
                   </Hand>
                 ) : (
                   <>
                     <HandInput
                       value={memoryText}
                       onChangeText={setMemoryText}
-                      placeholder={`what did ${askName} say?`}
+                      placeholder={`What did ${askName} say?`}
                       maxLength={500}
                       size="small"
                       style={styles.memoryInput}
@@ -267,7 +268,7 @@ export default function TodayScreen() {
                       returnKeyType="done"
                       onSubmitEditing={saveMemory}
                     />
-                    <Word title="save" size="small" onPress={saveMemory} disabled={!memoryText.trim()} busy={savingMemory} />
+                    <Word title="Save" size="small" onPress={saveMemory} disabled={!memoryText.trim()} busy={savingMemory} />
                   </>
                 )}
               </View>
@@ -277,7 +278,7 @@ export default function TodayScreen() {
               <View style={styles.actionRow}>
                 <View style={styles.thumbs}>
                   <Word
-                    title="nope"
+                    title="Nope"
                     variant="toggle"
                     selected={ratings[current.id] === -1}
                     onPress={() => rate(-1)}
@@ -285,7 +286,7 @@ export default function TodayScreen() {
                     accessibilityLabel="Hide this question"
                   />
                   <Word
-                    title="good one"
+                    title="Good one"
                     variant="toggle"
                     selected={ratings[current.id] === 1}
                     onPress={() => rate(1)}
@@ -293,13 +294,13 @@ export default function TodayScreen() {
                     accessibilityLabel="Good question"
                   />
                 </View>
-                <Word title={index + 1 < prompts.length ? 'next' : 'done'} weight="medium" onPress={advance} />
+                <Word title={index + 1 < prompts.length ? 'Next' : 'Done'} onPress={advance} />
               </View>
               <View style={styles.actionRow}>
                 <Hand size="small" tone="muted">
                   {index + 1} of {prompts.length}
                 </Hand>
-                <Word title="not now" variant="quiet" size="small" onPress={advance} accessibilityLabel="Skip this card for now" />
+                <Word title="Not now" variant="quiet" size="small" onPress={advance} accessibilityLabel="Skip this card for now" />
               </View>
             </View>
           </>
@@ -308,7 +309,7 @@ export default function TodayScreen() {
         {finished && prompts.length > 0 && (
           <View style={styles.center}>
             <Handwriting
-              text={`that's ${prompts.length}.\n${mode === 'evening' ? `now go listen to ${askName}.` : `go talk to ${askName}.`}`}
+              text={`That's ${prompts.length}.\n${mode === 'evening' ? `Now go listen to ${askName}.` : `Go talk to ${askName}.`}`}
               color={p.ink}
               size={HandSize.title}
             />

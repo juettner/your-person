@@ -3,14 +3,14 @@
  * file wraps all of them. `Stack` is a native stack navigator: screens push
  * on top of each other and the back gesture pops them.
  *
- * Before the first screen renders we need two things: the Grug Hand font
- * files, and the saved paper. The splash screen stays up until both are
+ * Before the first screen renders we need two things: the Allura font
+ * file, and the saved paper. The splash screen stays up until both are
  * ready so nothing flashes in a default font or the wrong colour.
  *
  * The stroke typeface used by `src/handwriting` is plain JSON and needs no
  * loading step: it is part of the JavaScript bundle.
  */
-import { useFonts } from 'expo-font';
+import { Allura_400Regular, useFonts } from '@expo-google-fonts/allura';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -25,11 +25,8 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 
 export default function RootLayout() {
   // expo-font downloads nothing at runtime: the font files ship inside the app bundle.
-  // The names used here are what `fontFamily: Fonts.hand` etc. refer to.
-  const [fontsLoaded, fontError] = useFonts({
-    [Fonts.hand]: require('../../assets/fonts/GrugHand-Regular.ttf'),
-    [Fonts.handMedium]: require('../../assets/fonts/GrugHand-Medium.ttf'),
-  });
+  // The name used here is what `fontFamily: Fonts.script` refers to.
+  const [fontsLoaded, fontError] = useFonts({ [Fonts.script]: Allura_400Regular });
   const [themeId, setThemeId] = useState<ThemeId | null>(null);
 
   useEffect(() => {
