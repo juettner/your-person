@@ -97,13 +97,16 @@ struct OnboardingView: View {
                 }
             }
         }
-        .task {
-            // Runs once when the view appears: load the taxonomy. Spring analogy: @PostConstruct.
-            do {
-                options = try await APIClient.shared.listInterests()
-            } catch {
-                loadError = describe(error)
-            }
+        // Runs once when the view appears: load the taxonomy. Spring analogy: @PostConstruct.
+        .task { await loadInterests() }
+    }
+
+    private func loadInterests() async {
+        loadError = nil
+        do {
+            options = try await APIClient.shared.listInterests()
+        } catch {
+            loadError = describe(error)
         }
     }
 
@@ -178,8 +181,12 @@ struct OnboardingView: View {
                     .padding(.top, 16)
                     .padding(.bottom, Margin.bottom)
                 }
+            } else if let loadError {
+                Small(loadError)
+                    .padding(.top, 16)
+                Word("try again", tone: .grey) { Task { await loadInterests() } }
             } else {
-                Small(loadError ?? " ")
+                Typewriter(text: "", haptics: false)
                     .padding(.top, 16)
             }
         }
