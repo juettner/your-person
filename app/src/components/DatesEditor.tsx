@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { LegacyFonts, Radius, Spacing } from "@/constants/theme";
 import type { ImportantDate } from '@/lib/api';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -101,12 +101,12 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
   },
   rowText: {
-    fontFamily: Fonts.bold,
+    fontFamily: LegacyFonts.bold,
     fontSize: 15,
     flex: 1,
   },
   remove: {
-    fontFamily: Fonts.bold,
+    fontFamily: LegacyFonts.bold,
     fontSize: 13,
     textDecorationLine: 'underline',
   },
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   input: {
-    fontFamily: Fonts.medium,
+    fontFamily: LegacyFonts.medium,
     fontSize: 16,
     paddingHorizontal: 12,
     paddingVertical: 10,

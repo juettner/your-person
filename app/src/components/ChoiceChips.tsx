@@ -4,7 +4,7 @@
  */
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Radius } from '@/constants/theme';
+import { LegacyFonts, Radius } from "@/constants/theme";
 
 interface ChoiceChipsProps {
   options: string[];
@@ -62,11 +62,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontFamily: Fonts.bold,
+    fontFamily: LegacyFonts.bold,
     fontSize: 13,
   },
   labelOn: {
-    fontFamily: Fonts.extraBold,
+    fontFamily: LegacyFonts.extraBold,
     fontSize: 13,
   },
 });

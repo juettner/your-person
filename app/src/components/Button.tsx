@@ -12,7 +12,7 @@ import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { HardShadow } from '@/components/HardShadow';
 import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { LegacyFonts, Radius, Spacing } from "@/constants/theme";
 
 interface ButtonProps {
   title: string;
@@ -142,11 +142,11 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   primaryText: {
-    fontFamily: Fonts.extraBold,
+    fontFamily: LegacyFonts.extraBold,
     fontSize: 18,
   },
   outlineText: {
-    fontFamily: Fonts.bold,
+    fontFamily: LegacyFonts.bold,
     fontSize: 16,
   },
   link: {
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   linkText: {
-    fontFamily: Fonts.bold,
+    fontFamily: LegacyFonts.bold,
     fontSize: 15,
     textDecorationLine: 'underline',
   },

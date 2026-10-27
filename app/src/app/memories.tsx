@@ -8,7 +8,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Spacing } from '@/constants/theme';
+import { LegacyFonts, Spacing } from "@/constants/theme";
 import { api, describeError, Memory } from '@/lib/api';
 import { getProfileId } from '@/lib/profile-store';
 
@@ -96,17 +96,17 @@ export default function MemoriesScreen() {
 const styles = StyleSheet.create({
   header: { gap: Spacing.sm, paddingBottom: Spacing.md },
   back: { alignSelf: 'flex-start' },
-  title: { fontFamily: Fonts.extraBold, fontSize: 34, lineHeight: 38, letterSpacing: -1 },
-  error: { fontFamily: Fonts.bold, fontSize: 14, marginBottom: Spacing.sm },
+  title: { fontFamily: LegacyFonts.extraBold, fontSize: 34, lineHeight: 38, letterSpacing: -1 },
+  error: { fontFamily: LegacyFonts.bold, fontSize: 14, marginBottom: Spacing.sm },
   spinner: { marginTop: Spacing.xxl },
   list: { gap: Spacing.md, paddingRight: 6, paddingBottom: Spacing.xl },
   emptyCard: { gap: Spacing.sm },
-  emptyTitle: { fontFamily: Fonts.extraBold, fontSize: 24 },
-  emptyText: { fontFamily: Fonts.medium, fontSize: 16, lineHeight: 23 },
+  emptyTitle: { fontFamily: LegacyFonts.extraBold, fontSize: 24 },
+  emptyText: { fontFamily: LegacyFonts.medium, fontSize: 16, lineHeight: 23 },
   memoryCard: { gap: Spacing.sm, padding: Spacing.md + 4 },
-  question: { fontFamily: Fonts.medium, fontSize: 14 },
-  text: { fontFamily: Fonts.bold, fontSize: 19, lineHeight: 26 },
+  question: { fontFamily: LegacyFonts.medium, fontSize: 14 },
+  text: { fontFamily: LegacyFonts.bold, fontSize: 19, lineHeight: 26 },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  date: { fontFamily: Fonts.medium, fontSize: 13 },
+  date: { fontFamily: LegacyFonts.medium, fontSize: 13 },
   remove: { minHeight: 32 },
 });

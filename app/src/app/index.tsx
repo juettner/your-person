@@ -1,11 +1,21 @@
 /**
- * Today: the heart of the app. One card at a time.
+ * The entry: the heart of the app. One question per page.
  *
- *  - "Nope" hides it and moves on; "Good one" keeps it coming back; "Not now"
- *    skips without judging it.
- *  - After a question, "What did they say?" writes a one-line memory.
- *  - Day mode deals questions with the occasional appreciation, bid, or
- *    dream card. Evening mode deals the end-of-day conversation.
+ *   Tuesday, October 27 · 1 of 3                       evening   Sam
+ *
+ *   say it out loud                       (only on the pages that are not questions)
+ *   Is there a dish you've been wanting to try making? _
+ *
+ *                     keep        not for us
+ *                                                               [fold]
+ *
+ *  - The question types itself out. The underscore blinks until you answer.
+ *  - "keep" means more like this; "not for us" hides it for good. Either
+ *    one stays underlined, and the next page is a page turn away. Turning
+ *    the page without marking anything is "not now": no judgement.
+ *  - "what did they say?" opens a line to write down their answer.
+ *  - After three, the last page sends you off to go talk to them.
+ *  - "evening" switches to the end-of-day conversation: listen, don't fix.
  *
  * State lives in this component. For an app this size that is the right
  * amount of architecture; a global store would be overkill.
@@ -13,24 +23,31 @@
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
-import { ThumbsDown, ThumbsUp } from '@/components/Icons';
-import { PromptCard } from '@/components/PromptCard';
-import { Screen } from '@/components/Screen';
-import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Radius, Spacing } from '@/constants/theme';
-import { api, describeError, Prompt, PromptMode, PromptsResponse, Score } from '@/lib/api';
+import { StyleSheet, Text, View } from 'react-native';
+import { Line } from '@/components/Line';
+import { Page } from '@/components/Page';
+import { Small } from '@/components/Small';
+import { Typewriter } from '@/components/Typewriter';
+import { Word } from '@/components/Word';
+import { Fonts, Ink, Margin, Spacing, Type } from '@/constants/theme';
+import { api, describeError, Prompt, PromptKind, PromptMode, PromptsResponse, Score } from '@/lib/api';
 import { getProfileId } from '@/lib/profile-store';
 
 const BATCH_SIZE = 3;
 
 type Status = 'loading' | 'ready' | 'error';
 
-export default function TodayScreen() {
-  const p = usePalette();
+/** A small grey note above the pages that are not plain questions, so the asker knows whether to ask or to act. */
+const KIND_NOTE: Record<Exclude<PromptKind, 'question'>, string> = {
+  appreciation: 'say it out loud',
+  bid: 'one small thing today',
+  dream: 'a bigger one',
+  stress: 'just listen',
+};
 
+const COUNT_WORDS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+
+export default function EntryScreen() {
   const [status, setStatus] = useState<Status>('loading');
   const [error, setError] = useState<string | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
@@ -39,10 +56,11 @@ export default function TodayScreen() {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [nudges, setNudges] = useState<PromptsResponse['nudges'] | null>(null);
   const [index, setIndex] = useState(0);
-  /** questionId -> score the user gave this session, for button highlighting. */
-  const [ratings, setRatings] = useState<Record<string, Score>>({});
-  const [rating, setRating] = useState(false);
-  /** The "what did they say?" box: its text, and whether this card already saved one. */
+  /** questionId -> the mark you gave it this session. */
+  const [marks, setMarks] = useState<Record<string, Score>>({});
+  const [marking, setMarking] = useState(false);
+  /** The "what did they say?" line: whether it is open, its text, and which question already has one. */
+  const [memoryOpen, setMemoryOpen] = useState(false);
   const [memoryText, setMemoryText] = useState('');
   const [savedMemoryFor, setSavedMemoryFor] = useState<string | null>(null);
   const [savingMemory, setSavingMemory] = useState(false);
@@ -56,7 +74,8 @@ export default function TodayScreen() {
       setPrompts(res.questions);
       setNudges(res.nudges);
       setIndex(0);
-      setRatings({});
+      setMarks({});
+      setMemoryOpen(false);
       setMemoryText('');
       setSavedMemoryFor(null);
       setStatus('ready');
@@ -67,7 +86,7 @@ export default function TodayScreen() {
   }, []);
 
   // Runs every time this screen becomes visible, including when coming back
-  // from the profile screen, so a renamed partner shows up immediately.
+  // from the profile page, so a renamed person shows up immediately.
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
@@ -92,26 +111,26 @@ export default function TodayScreen() {
     }, [loadBatch]),
   );
 
-  const current = prompts[index];
-  const finished = status === 'ready' && index >= prompts.length;
+  const current: Prompt | undefined = prompts[index];
+  const finished = status === 'ready' && prompts.length > 0 && index >= prompts.length;
 
-  const advance = () => {
+  const turn = () => {
     setIndex((i) => i + 1);
+    setMemoryOpen(false);
     setMemoryText('');
   };
 
-  const rate = async (score: Score) => {
-    if (!profileId || !current || rating) return;
-    setRating(true);
+  const mark = async (score: Score) => {
+    if (!profileId || !current || marking) return;
+    setMarking(true);
     Haptics.impactAsync(score === 1 ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    setRatings((r) => ({ ...r, [current.id]: score })); // optimistic
+    setMarks((m) => ({ ...m, [current.id]: score })); // optimistic
     try {
       await api.rate(profileId, current.id, score);
-      if (score === -1) advance(); // "Nope" means "not this one"; move along without another tap.
     } catch (err) {
       setError(describeError(err));
     } finally {
-      setRating(false);
+      setMarking(false);
     }
   };
 
@@ -122,6 +141,7 @@ export default function TodayScreen() {
       await api.addMemory(profileId, memoryText.trim(), current.id);
       setSavedMemoryFor(current.id);
       setMemoryText('');
+      setMemoryOpen(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (err) {
       setError(describeError(err));
@@ -130,285 +150,181 @@ export default function TodayScreen() {
     }
   };
 
-  const switchMode = (next: PromptMode) => {
-    if (next === mode || !profileId) return;
+  const switchMode = () => {
+    if (!profileId) return;
+    const next: PromptMode = mode === 'day' ? 'evening' : 'day';
     setMode(next);
     loadBatch(profileId, next);
   };
 
-  const thumbColor = (score: Score) => (ratings[current?.id ?? ''] === score ? p.onAccent : p.outlineText);
-  const upcoming = nudges?.upcomingDates[0];
+  const topLine = (
+    <View style={styles.topLine}>
+      <Small>{current ? `${today()} · ${index + 1} of ${prompts.length}` : today()}</Small>
+      <View style={styles.topWords}>
+        {status === 'ready' && (
+          <Word
+            label={mode === 'day' ? 'evening' : 'day'}
+            tone="grey"
+            size={Type.small}
+            onPress={switchMode}
+            accessibilityLabel={mode === 'day' ? 'Switch to evening questions' : 'Switch to day questions'}
+            style={styles.topWord}
+          />
+        )}
+        <Word label={askName || 'them'} tone="grey" size={Type.small} onPress={() => router.push('/profile')} accessibilityLabel="Their page" style={styles.topWord} />
+      </View>
+    </View>
+  );
+
+  if (status === 'loading') {
+    return (
+      <Page>
+        {topLine}
+        <View style={styles.middle}>
+          <Text style={styles.waiting}>_</Text>
+        </View>
+      </Page>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <Page>
+        {topLine}
+        <View style={styles.middle}>
+          <Typewriter text={error ?? 'Something went wrong.'} size={Type.heading} />
+          <Word label="try again" tone="grey" onPress={() => profileId && loadBatch(profileId, mode)} style={styles.belowQuestion} />
+        </View>
+      </Page>
+    );
+  }
+
+  if (prompts.length === 0) {
+    return (
+      <Page>
+        {topLine}
+        <View style={styles.middle}>
+          <Typewriter text={`Nothing left to ask. Add a few more things ${askName} is into.`} size={Type.heading} />
+          <Word label="their page" tone="grey" onPress={() => router.push('/profile')} style={styles.belowQuestion} />
+        </View>
+      </Page>
+    );
+  }
+
+  if (finished || !current) {
+    const upcoming = nudges?.upcomingDates[0];
+    const count = COUNT_WORDS[prompts.length - 1] ?? String(prompts.length);
+    return (
+      <Page onTurn={() => profileId && loadBatch(profileId, mode)} turnLabel={`${capitalize(count)} more`}>
+        {topLine}
+        <View style={styles.middle}>
+          <Typewriter
+            text={mode === 'evening' ? `That's ${count}. Now go listen to ${askName}.` : `That's ${count}. Go talk to ${askName}.`}
+            answered
+          />
+          {upcoming && (
+            <Small style={styles.belowQuestion}>
+              {`${upcoming.label} is ${upcoming.daysAway === 0 ? 'today' : upcoming.daysAway === 1 ? 'tomorrow' : `in ${upcoming.daysAway} days`}.`}
+            </Small>
+          )}
+          {nudges?.reviewDetails && !upcoming && <Small style={styles.belowQuestion}>{`It's been a while. Is ${askName}'s page still true?`}</Small>}
+        </View>
+        <View style={styles.bottomRow}>
+          <Word label="what they said" tone="grey" onPress={() => router.push('/memories')} />
+        </View>
+      </Page>
+    );
+  }
+
+  const myMark = marks[current.id];
+  const answered = myMark !== undefined;
+  const canWriteDown = current.kind !== 'bid' && current.kind !== 'appreciation';
 
   return (
-    <Screen>
-      {/* Top row: who we're asking, the day/evening switch, and the way to the profile. */}
-      <View style={styles.topRow}>
-        <Text style={[styles.askName, { color: p.onGround }]}>{askName ? `Ask ${askName}` : ' '}</Text>
-        <View style={styles.topRight}>
-          <ModeSwitch mode={mode} onChange={switchMode} />
-          <Button title="Profile" variant="link" onPress={() => router.push('/profile')} />
-        </View>
+    <Page onTurn={turn}>
+      {topLine}
+      <View style={styles.middle}>
+        {current.kind !== 'question' && <Small style={styles.kindNote}>{KIND_NOTE[current.kind]}</Small>}
+        <Typewriter text={current.text} answered={answered} />
+
+        {canWriteDown &&
+          (savedMemoryFor === current.id ? (
+            <Small style={styles.belowQuestion}>written down.</Small>
+          ) : memoryOpen ? (
+            <View style={styles.memory}>
+              <Line
+                value={memoryText}
+                onChangeText={setMemoryText}
+                placeholder={`what ${askName} said`}
+                maxLength={500}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={saveMemory}
+                accessibilityLabel="What did they say"
+              />
+              <Word label={savingMemory ? 'saving' : 'save'} tone="grey" onPress={saveMemory} disabled={savingMemory || !memoryText.trim()} />
+            </View>
+          ) : (
+            <Word label="what did they say?" tone="grey" onPress={() => setMemoryOpen(true)} style={styles.belowQuestion} />
+          ))}
       </View>
 
-      {/* Gentle nudges from the server: a date coming up, or details worth a second look. */}
-      {status === 'ready' && (upcoming || nudges?.reviewDetails) && (
-        <Pressable
-          onPress={() => router.push('/profile')}
-          accessibilityRole="button"
-          style={[styles.nudge, { borderColor: p.outlineBorder }]}
-        >
-          <Text style={[styles.nudgeText, { color: p.onGround }]}>
-            {upcoming
-              ? `${upcoming.label} is ${upcoming.daysAway === 0 ? 'today' : upcoming.daysAway === 1 ? 'tomorrow' : `in ${upcoming.daysAway} days`}.`
-              : `It's been a while. Still true? Give ${askName}'s card a once-over.`}
-          </Text>
-        </Pressable>
-      )}
-
-      {status === 'loading' && (
-        <View style={styles.center}>
-          <ActivityIndicator color={p.onGround} size="large" />
-        </View>
-      )}
-
-      {status === 'error' && (
-        <View style={styles.center}>
-          <Card contentStyle={styles.messageCard}>
-            <Text style={[styles.messageTitle, { color: p.ink }]}>Hmm.</Text>
-            <Text style={[styles.messageText, { color: p.muted }]}>{error}</Text>
-          </Card>
-          <Button title="Try again" onPress={() => profileId && loadBatch(profileId, mode)} style={styles.messageButton} />
-        </View>
-      )}
-
-      {status === 'ready' && prompts.length === 0 && (
-        <View style={styles.center}>
-          <Card contentStyle={styles.messageCard}>
-            <Text style={[styles.messageTitle, { color: p.ink }]}>No cards left</Text>
-            <Text style={[styles.messageText, { color: p.muted }]}>Add a few more interests to the profile to unlock more.</Text>
-          </Card>
-          <Button title="Edit profile" onPress={() => router.push('/profile')} style={styles.messageButton} />
-        </View>
-      )}
-
-      {status === 'ready' && current && (
-        <>
-          <View style={styles.cardArea}>
-            <PromptCard prompt={current} index={index} total={prompts.length} askName={askName} />
-          </View>
-
-          {/* "What did they say?" Only for cards that ask something. */}
-          {current.kind !== 'bid' && current.kind !== 'appreciation' && (
-            <View style={styles.memoryRow}>
-              {savedMemoryFor === current.id ? (
-                <Text style={[styles.memorySaved, { color: p.onGround }]}>Saved. It will shape the next cards.</Text>
-              ) : (
-                <>
-                  <TextInput
-                    value={memoryText}
-                    onChangeText={setMemoryText}
-                    placeholder={`What did ${askName} say?`}
-                    placeholderTextColor={p.muted}
-                    maxLength={500}
-                    style={[styles.memoryInput, { color: p.ink, borderColor: p.ink, backgroundColor: p.card }]}
-                    accessibilityLabel="What did they say"
-                    returnKeyType="done"
-                    onSubmitEditing={saveMemory}
-                  />
-                  <Button
-                    title="Save"
-                    variant="outline"
-                    onPress={saveMemory}
-                    disabled={!memoryText.trim()}
-                    busy={savingMemory}
-                    style={styles.memoryButton}
-                  />
-                </>
-              )}
-            </View>
-          )}
-
-          <View style={styles.actions}>
-            <View style={styles.thumbs}>
-              <Button
-                title="Nope"
-                variant="outline"
-                icon={<ThumbsDown color={thumbColor(-1)} />}
-                selected={ratings[current.id] === -1}
-                onPress={() => rate(-1)}
-                disabled={rating}
-                style={styles.thumb}
-                accessibilityLabel="Hide this question"
-              />
-              <Button
-                title="Good one"
-                variant="outline"
-                icon={<ThumbsUp color={thumbColor(1)} />}
-                selected={ratings[current.id] === 1}
-                onPress={() => rate(1)}
-                disabled={rating}
-                style={styles.thumb}
-                accessibilityLabel="Good question"
-              />
-            </View>
-            <Button title={index + 1 < prompts.length ? 'Next card' : 'Done'} onPress={advance} />
-            <Button title="Not now" variant="link" onPress={advance} style={styles.notNow} accessibilityLabel="Skip this card for now" />
-          </View>
-        </>
-      )}
-
-      {finished && prompts.length > 0 && (
-        <View style={styles.center}>
-          <Card contentStyle={styles.messageCard}>
-            <Text style={[styles.messageTitle, { color: p.ink }]}>That&apos;s {prompts.length}.</Text>
-            <Text style={[styles.messageText, { color: p.muted }]}>
-              {mode === 'evening' ? `Now go listen to ${askName}.` : `Go talk to ${askName}.`}
-            </Text>
-          </Card>
-          <Button title={`${prompts.length} more`} onPress={() => profileId && loadBatch(profileId, mode)} style={styles.messageButton} />
-        </View>
-      )}
-    </Screen>
+      <View style={styles.bottomRow}>
+        <Word label="keep" marked={myMark === 1} tone={myMark === -1 ? 'faint' : 'ink'} onPress={() => mark(1)} disabled={marking} accessibilityLabel="Keep this question" />
+        <Word label="not for us" marked={myMark === -1} tone={myMark === 1 ? 'faint' : 'ink'} onPress={() => mark(-1)} disabled={marking} accessibilityLabel="Not for us" />
+      </View>
+    </Page>
   );
 }
 
-/** Day / Evening toggle. Evening deals the end-of-day conversation: listen, take their side, don't fix. */
-function ModeSwitch({ mode, onChange }: { mode: PromptMode; onChange: (m: PromptMode) => void }) {
-  const p = usePalette();
-  return (
-    <View style={[styles.switch, { borderColor: p.outlineBorder }]} accessibilityRole="radiogroup">
-      {(['day', 'evening'] as const).map((m) => {
-        const on = m === mode;
-        return (
-          <Pressable
-            key={m}
-            onPress={() => onChange(m)}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: on }}
-            aria-checked={on}
-            accessibilityLabel={m === 'day' ? 'Day mode' : 'Evening mode'}
-            style={[styles.switchOption, on && { backgroundColor: p.outlineBorder }]}
-          >
-            <Text style={[styles.switchText, { color: on ? p.ground : p.onGround }]}>{m === 'day' ? 'Day' : 'Evening'}</Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
+/** "Tuesday, October 27". Hermes ships Intl, so this works on iOS and Android as well as on the web. */
+function today(): string {
+  return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 const styles = StyleSheet.create({
-  topRow: {
+  topLine: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 48,
-  },
-  topRight: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    minHeight: 24,
   },
-  askName: {
-    fontFamily: Fonts.extraBold,
-    fontSize: 20,
-    letterSpacing: -0.4,
-  },
-  switch: {
+  topWords: {
     flexDirection: 'row',
-    borderWidth: 2,
-    borderRadius: Radius.pill,
-    overflow: 'hidden',
+    gap: Spacing.md,
   },
-  switchOption: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    minHeight: 32,
-    justifyContent: 'center',
+  topWord: {
+    minHeight: 24,
   },
-  switchText: {
-    fontFamily: Fonts.bold,
-    fontSize: 12,
-  },
-  nudge: {
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderRadius: Radius.md,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginTop: Spacing.xs,
-  },
-  nudgeText: {
-    fontFamily: Fonts.bold,
-    fontSize: 14,
-  },
-  cardArea: {
+  middle: {
     flex: 1,
     justifyContent: 'center',
-    paddingRight: 6,
-    paddingBottom: 6,
+    paddingBottom: Spacing.lg,
   },
-  center: {
-    flex: 1,
+  waiting: {
+    fontFamily: Fonts.type,
+    fontSize: Type.question,
+    color: Ink.ink,
+  },
+  kindNote: {
+    marginBottom: Spacing.sm,
+  },
+  belowQuestion: {
+    marginTop: Spacing.md,
+    alignSelf: 'flex-start',
+  },
+  memory: {
+    marginTop: Spacing.md,
+    gap: Spacing.xs,
+  },
+  bottomRow: {
+    flexDirection: 'row',
     justifyContent: 'center',
-    gap: Spacing.lg,
-    paddingRight: 6,
-  },
-  messageCard: {
-    gap: Spacing.sm,
-    paddingVertical: Spacing.xl,
-  },
-  messageTitle: {
-    fontFamily: Fonts.extraBold,
-    fontSize: 32,
-    letterSpacing: -0.8,
-  },
-  messageText: {
-    fontFamily: Fonts.medium,
-    fontSize: 18,
-    lineHeight: 26,
-  },
-  messageButton: {
-    marginBottom: Spacing.xl,
-  },
-  memoryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: 12,
-    minHeight: 48,
-  },
-  memoryInput: {
-    flex: 1,
-    fontFamily: Fonts.medium,
-    fontSize: 15,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 2,
-    borderRadius: Radius.md,
-  },
-  memoryButton: {
-    minHeight: 44,
-    paddingHorizontal: Spacing.md,
-  },
-  memorySaved: {
-    fontFamily: Fonts.bold,
-    fontSize: 14,
-  },
-  actions: {
-    gap: 12,
-    paddingBottom: Spacing.md,
-    paddingRight: 4,
-  },
-  thumbs: {
-    flexDirection: 'row',
-    gap: 14,
-  },
-  thumb: {
-    flex: 1,
-  },
-  notNow: {
-    alignSelf: 'center',
-    minHeight: 36,
+    gap: 40,
+    paddingBottom: Margin.bottom,
   },
 });

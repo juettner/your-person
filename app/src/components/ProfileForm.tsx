@@ -27,7 +27,7 @@ import { Card } from '@/components/Card';
 import { FollowUpFields } from '@/components/FollowUpFields';
 import { InterestChips } from '@/components/InterestChips';
 import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { LegacyFonts, Radius, Spacing } from "@/constants/theme";
 import { api, describeError, Interest, InterestDetails, ProfileInput, ProfileLocation } from '@/lib/api';
 import { detectLocation } from '@/lib/location';
 
@@ -293,12 +293,12 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
   },
   stepText: {
-    fontFamily: Fonts.extraBold,
+    fontFamily: LegacyFonts.extraBold,
     fontSize: 13,
     letterSpacing: 0.8,
   },
   title: {
-    fontFamily: Fonts.extraBold,
+    fontFamily: LegacyFonts.extraBold,
     fontSize: 34,
     lineHeight: 38,
     letterSpacing: -1,
@@ -311,11 +311,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   label: {
-    fontFamily: Fonts.bold,
+    fontFamily: LegacyFonts.bold,
     fontSize: 15,
   },
   input: {
-    fontFamily: Fonts.medium,
+    fontFamily: LegacyFonts.medium,
     fontSize: 17,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -328,11 +328,11 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top', // Android: start typing at the top, not vertically centred
   },
   error: {
-    fontFamily: Fonts.bold,
+    fontFamily: LegacyFonts.bold,
     fontSize: 14,
   },
   moreLater: {
-    fontFamily: Fonts.medium,
+    fontFamily: LegacyFonts.medium,
     fontSize: 13,
   },
   inlineRow: {
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     minHeight: 36,
   },
   note: {
-    fontFamily: Fonts.medium,
+    fontFamily: LegacyFonts.medium,
     fontSize: 13,
   },
   actions: {

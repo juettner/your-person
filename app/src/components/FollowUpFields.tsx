@@ -6,7 +6,7 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { ChoiceChips } from '@/components/ChoiceChips';
 import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Radius } from '@/constants/theme';
+import { LegacyFonts, Radius } from "@/constants/theme";
 import type { Interest } from '@/lib/api';
 
 type Answers = Record<string, string | string[]>;
@@ -52,11 +52,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   label: {
-    fontFamily: Fonts.bold,
+    fontFamily: LegacyFonts.bold,
     fontSize: 15,
   },
   input: {
-    fontFamily: Fonts.medium,
+    fontFamily: LegacyFonts.medium,
     fontSize: 17,
     paddingHorizontal: 14,
     paddingVertical: 12,

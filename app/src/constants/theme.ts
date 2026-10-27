@@ -1,17 +1,70 @@
 /**
- * Design tokens for the "Index Card" look.
+ * Design tokens for the "Journal" look.
  *
- * The app has one layout and five palettes. A palette is a flat object of
- * named colors; every component reads colors from the palette it gets via
- * `usePalette()` (see components/ThemeProvider.tsx) and never hard-codes a hex.
+ * One look, no palettes: white paper, black ink, one typewriter face. Every
+ * screen is a page in a journal. The question is the only loud thing on it;
+ * everything else is small, grey, and out of the way.
  *
  * Vocabulary:
- *   ground   the screen background. In most palettes it is pale; in Terracotta it is the loud one.
- *   onGround text that sits directly on the ground (the "Ask Sam" header, links)
- *   card     the index card's paper
- *   ink      text and 2px borders on the card, and the fill of the main button
- *   accent   the highlight chip behind the interest label, and the button's offset shadow
+ *   paper   the page. Pure white, on purpose (not cream, not off-white).
+ *   ink     the typed text, the drawn circles, the underline under "keep".
+ *   grey    the quiet things: the date line, "and 18 more", a hint.
+ *   faint   the de-selected word next to the one you picked.
+ *   fold    the lifted corner at the bottom right that turns the page.
  */
+export const Ink = {
+  paper: '#FFFFFF',
+  ink: '#1E1A17',
+  grey: '#9A9088',
+  muted: '#6B625A',
+  faint: '#C4BCB2',
+  fold: '#F1EEE9',
+  foldEdge: '#E6E1DA',
+} as const;
+
+/**
+ * The one font family, as registered by expo-font (see app/_layout.tsx).
+ * Special Elite is a single-weight typewriter face: there is no bold, so
+ * emphasis comes from size, a drawn circle, or an underline, never weight.
+ */
+export const Fonts = {
+  type: 'SpecialElite_400Regular',
+} as const;
+
+/** Type sizes. The question is the headline on every page; the rest stays small. */
+export const Type = {
+  question: 30,
+  heading: 28,
+  body: 19,
+  word: 15,
+  small: 13,
+} as const;
+
+/** How fast the typewriter types, in characters per second. */
+export const TypingSpeed = 26;
+
+/** Width of the page on a desktop browser. Phones use the full width. */
+export const PageWidth = 430;
+
+/** Page margins: the inset from the edge of the paper. */
+export const Margin = {
+  side: 36,
+  top: 24,
+  /** Room kept clear for the fold at the bottom right. */
+  bottom: 120,
+} as const;
+
+export const Spacing = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+} as const;
+
+// ---- Index Card era, kept only until the remaining screens move to the journal look ----
+// Everything below is removed in the next commit.
 
 export type ThemeId =
   | 'sky'
@@ -230,21 +283,12 @@ export function paletteFor(id: ThemeId): Palette {
  * Font family names as registered by expo-font (see app/_layout.tsx).
  * On native, a custom font family must be selected by NAME per weight;
  * combining `fontFamily` with `fontWeight` picks the wrong face. So styles use
- * `fontFamily: Fonts.bold`, never `fontWeight: '700'`.
+ * `fontFamily: LegacyFonts.bold`, never `fontWeight: '700'`.
  */
-export const Fonts = {
+export const LegacyFonts = {
   medium: 'BricolageGrotesque_500Medium',
   bold: 'BricolageGrotesque_700Bold',
   extraBold: 'BricolageGrotesque_800ExtraBold',
-} as const;
-
-export const Spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
 } as const;
 
 export const Radius = {

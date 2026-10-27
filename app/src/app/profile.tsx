@@ -12,7 +12,7 @@ import { ProfileForm } from '@/components/ProfileForm';
 import { Screen } from '@/components/Screen';
 import { ThemePicker } from '@/components/ThemePicker';
 import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Spacing } from '@/constants/theme';
+import { LegacyFonts, Spacing } from "@/constants/theme";
 import { api, describeError, ImportantDate, Profile, ProfileInput } from '@/lib/api';
 import { clearProfileId, getProfileId } from '@/lib/profile-store';
 import { applyReminder, DEFAULT_REMINDER, loadReminder, ReminderSetting, WEEKDAYS } from '@/lib/reminders';
@@ -203,16 +203,16 @@ const styles = StyleSheet.create({
   header: { gap: Spacing.sm },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   themeBlock: { gap: Spacing.sm, paddingVertical: Spacing.sm },
-  sectionLabel: { fontFamily: Fonts.bold, fontSize: 15 },
+  sectionLabel: { fontFamily: LegacyFonts.bold, fontSize: 15 },
   sectionCard: { gap: Spacing.sm, padding: Spacing.md + 4 },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   switchText: { flex: 1, gap: 2 },
-  switchTitle: { fontFamily: Fonts.bold, fontSize: 16 },
-  switchHint: { fontFamily: Fonts.medium, fontSize: 13, lineHeight: 18 },
+  switchTitle: { fontFamily: LegacyFonts.bold, fontSize: 16 },
+  switchHint: { fontFamily: LegacyFonts.medium, fontSize: 13, lineHeight: 18 },
   inlineLink: { alignSelf: 'flex-start', minHeight: 36 },
-  note: { fontFamily: Fonts.medium, fontSize: 13 },
-  hint: { fontFamily: Fonts.medium, textAlign: 'center', fontSize: 14 },
+  note: { fontFamily: LegacyFonts.medium, fontSize: 13 },
+  hint: { fontFamily: LegacyFonts.medium, textAlign: 'center', fontSize: 14 },
   centerLink: { alignSelf: 'center' },
-  error: { fontFamily: Fonts.bold, fontSize: 16, marginTop: Spacing.md },
+  error: { fontFamily: LegacyFonts.bold, fontSize: 16, marginTop: Spacing.md },
   spinner: { marginTop: Spacing.xxl },
 });

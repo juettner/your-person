@@ -8,7 +8,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Card } from '@/components/Card';
 import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { LegacyFonts, Radius, Spacing } from "@/constants/theme";
 import type { Prompt, PromptKind } from '@/lib/api';
 
 interface PromptCardProps {
@@ -86,16 +86,16 @@ const styles = StyleSheet.create({
     borderRadius: Radius.sm,
   },
   tagText: {
-    fontFamily: Fonts.extraBold,
+    fontFamily: LegacyFonts.extraBold,
     fontSize: 13,
     letterSpacing: 0.8,
   },
   counter: {
-    fontFamily: Fonts.bold,
+    fontFamily: LegacyFonts.bold,
     fontSize: 14,
   },
   question: {
-    fontFamily: Fonts.bold,
+    fontFamily: LegacyFonts.bold,
     fontSize: 30,
     lineHeight: 36,
     letterSpacing: -0.5,
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     opacity: 0.12,
   },
   hint: {
-    fontFamily: Fonts.medium,
+    fontFamily: LegacyFonts.medium,
     fontSize: 15,
     lineHeight: 22,
   },

@@ -10,7 +10,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { usePalette } from '@/components/ThemeProvider';
-import { Fonts, Radius, Spacing } from '@/constants/theme';
+import { LegacyFonts, Radius, Spacing } from "@/constants/theme";
 import type { Interest } from '@/lib/api';
 
 const INITIAL_VISIBLE = 12;
@@ -81,11 +81,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   label: {
-    fontFamily: Fonts.bold,
+    fontFamily: LegacyFonts.bold,
     fontSize: 13,
   },
   labelOn: {
-    fontFamily: Fonts.extraBold,
+    fontFamily: LegacyFonts.extraBold,
     fontSize: 13,
   },
   // Keep the gap token referenced so the spacing scale stays the single source of truth.

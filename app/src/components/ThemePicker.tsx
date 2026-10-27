@@ -5,7 +5,7 @@
  */
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/components/ThemeProvider';
-import { Fonts, Radius, Spacing, THEMES } from '@/constants/theme';
+import { LegacyFonts, Radius, Spacing, THEMES } from "@/constants/theme";
 
 export function ThemePicker() {
   const { palette: current, themeId, setThemeId } = useTheme();
@@ -65,11 +65,11 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
   },
   name: {
-    fontFamily: Fonts.medium,
+    fontFamily: LegacyFonts.medium,
     fontSize: 12,
   },
   nameOn: {
-    fontFamily: Fonts.extraBold,
+    fontFamily: LegacyFonts.extraBold,
     fontSize: 12,
   },
   pressed: {
