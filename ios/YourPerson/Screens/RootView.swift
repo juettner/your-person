@@ -1,15 +1,16 @@
 //
 //  RootView.swift
 //
-//  Decides what the app opens on: onboarding until a profile exists, then
-//  Today. A NavigationStack lets Today push Profile, and Profile push
-//  Memories, with the system swipe-back gesture and no visible bar.
+//  Decides what the app opens on: the first pages until a profile exists,
+//  then the entry. A NavigationStack lets the entry push their page, and
+//  their page push what they said, with the system swipe-back gesture and
+//  no visible bar. The journal is always white paper, so the light scheme
+//  is fixed.
 //
 
 import SwiftUI
 
 struct RootView: View {
-    @EnvironmentObject private var theme: ThemeStore
     @EnvironmentObject private var profiles: ProfileStore
 
     var body: some View {
@@ -17,10 +18,10 @@ struct RootView: View {
             if profiles.profileId == nil {
                 OnboardingView()
             } else {
-                TodayView()
+                EntryView()
             }
         }
-        .tint(theme.paper.ink)
-        .preferredColorScheme(theme.paper.isDark ? .dark : .light)
+        .tint(Ink.ink)
+        .preferredColorScheme(.light)
     }
 }

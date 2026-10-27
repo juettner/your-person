@@ -7,16 +7,17 @@ Phases, not dates. Each phase should be shippable on its own.
 - [x] NestJS API: profiles, curated question bank, selection with hide/like, in-memory and MongoDB storage
 - [x] App: onboarding questionnaire, one question at a time with thumbs up/down, profile edit (first as an Expo app, since rebuilt natively)
 - [x] Runs against an in-memory API with no infrastructure
-- [x] Index Card look with five selectable palettes (replaced by the Hand look)
+- [x] Index Card look with five selectable palettes (replaced by the Letter look, then the Journal)
 - [x] Deep interests: per-interest follow-up cards in onboarding, answers feed templated questions
 - [x] Location as a place name, "Around town" interest, local follow-ups and city questions
 - [x] AI question engine: Claude writes a per-profile deck from the whole profile and feedback, optional web research, mixed into selection, rated like curated questions
 - [x] Gottman-inspired cards: appreciation, bids, dreams, evening mode, rituals
 - [x] Memories ("what they said"), Not now, dates that matter, weekly nudge, shorter onboarding
 - [x] The Letter look: one soft colour, a script hand, the question writes itself with haptic ticks (grug's idea, our own hand)
-- [x] Rebuilt as a native SwiftUI iPhone app: Canvas handwriting, system haptics, no dependencies
+- [x] Rebuilt as a native SwiftUI iPhone app: system haptics, no dependencies
+- [x] The Journal look: white paper, a typewriter face, the question types itself with a blinking underscore, words instead of buttons, ink circles, page turns (replaced the Letter look and its papers)
 - [ ] Turn the engine on with a real key and read a few decks critically; tune the system prompt from what comes back
-- [ ] Run it on a real iPhone from Xcode and tune the pen speed and haptics by hand
+- [ ] Run it on a real iPhone from Xcode and tune the typing speed, the circle, and the haptics by hand
 
 ## Phase 1: make it real
 

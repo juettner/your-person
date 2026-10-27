@@ -1,8 +1,8 @@
 //
 //  DatesEditorView.swift
 //
-//  A short list of dates that matter: label, month, day. The parent owns
-//  the list. Kept deliberately plain: three lines to write on and an "Add"
+//  The dates that matter: label, month, day. Written as a short list with a
+//  line to add one more. The parent owns the list. Three lines and an "add"
 //  word beat a date picker for "Mom's birthday, March 3".
 //
 
@@ -11,7 +11,6 @@ import SwiftUI
 struct DatesEditorView: View {
     @Binding var dates: [ImportantDate]
 
-    @EnvironmentObject private var theme: ThemeStore
     @State private var label = ""
     @State private var month = ""
     @State private var day = ""
@@ -24,29 +23,29 @@ struct DatesEditorView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
             ForEach(Array(dates.enumerated()), id: \.offset) { index, date in
                 HStack(spacing: 16) {
-                    (Text(date.label).foregroundColor(theme.paper.ink)
-                        + Text("  \(Self.months[max(0, min(11, date.month - 1))]) \(date.day)").foregroundColor(theme.paper.muted))
-                        .font(.hand(TypeSize.body))
+                    (Text(date.label).font(.type(TypeSize.body)).foregroundColor(Ink.ink)
+                        + Text("  \(Self.months[max(0, min(11, date.month - 1))]) \(date.day)").font(.type(TypeSize.small)).foregroundColor(Ink.grey))
                     Spacer()
-                    Word("Remove", variant: .quiet, size: TypeSize.small) { dates.remove(at: index) }
+                    Word("remove", tone: .grey, size: TypeSize.small) { dates.remove(at: index) }
                         .accessibilityLabel("Remove \(date.label)")
                 }
             }
 
             HStack(alignment: .bottom, spacing: 16) {
-                HandField(placeholder: "Mom's birthday", text: $label)
+                Line(placeholder: "Mom's birthday", text: $label)
                     .accessibilityLabel("Date label")
-                HandField(placeholder: "MM", text: $month, keyboard: .numberPad)
-                    .frame(width: 48)
+                Line(placeholder: "MM", text: $month, keyboard: .numberPad)
+                    .frame(width: 56)
                     .accessibilityLabel("Month")
-                HandField(placeholder: "DD", text: $day, keyboard: .numberPad)
-                    .frame(width: 48)
+                Line(placeholder: "DD", text: $day, keyboard: .numberPad)
+                    .frame(width: 56)
                     .accessibilityLabel("Day")
             }
-            Word("Add date", disabled: !canAdd, size: TypeSize.small) { add() }
+            Word("add", tone: canAdd ? .ink : .faint, disabled: !canAdd) { add() }
+                .accessibilityLabel("Add date")
         }
     }
 

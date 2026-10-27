@@ -33,7 +33,7 @@
 	<string>Your Person uses your location only to fill in the city your person lives in. Only the city name is saved.</string>
 	<key>UIAppFonts</key>
 	<array>
-		<string>Allura-Regular.ttf</string>
+		<string>SpecialElite-Regular.ttf</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>

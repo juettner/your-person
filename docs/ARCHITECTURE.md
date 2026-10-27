@@ -28,14 +28,23 @@ Two deployable units, one repo. The app never talks to the database; it only tal
 | Flutter | One codebase, good performance | Dart, and its own widgets rather than the platform's |
 | **Swift + SwiftUI** | The real thing. Canvas, TimelineView, Core Haptics, the system font pipeline and the navigation stack are all first-party and all free. No dependencies at all. | iPhone only. A Mac with Xcode to build. |
 
-**Decision:** SwiftUI, iPhone only. The app is a page of handwriting and a handful of words; what matters is how it feels, and feel is where cross-platform layers charge their tax. Android and web can come later as their own apps if they are ever wanted; the API does not care.
+**Decision:** SwiftUI, iPhone only. The app is a page of typed text and a handful of words; what matters is how it feels, and feel is where cross-platform layers charge their tax. Android and web can come later as their own apps if they are ever wanted; the API does not care.
 
 **What to know coming from Java**
 
 - SwiftUI is a declarative component model like React, with the compiler doing the work: a `View` is a struct whose `body` describes the UI, and `@State` / `@StateObject` / `@EnvironmentObject` hold the state that makes it re-render. No classes to speak of for the UI itself.
 - There is no build system to learn: the Xcode project (`ios/YourPerson.xcodeproj`) is the equivalent of a Gradle or Maven file, and it has zero third-party dependencies. The folder on disk is the project; add a file and it is in the build.
 - `async/await` and `actor` are Swift's concurrency; `URLSession` plus `Codable` do what RestTemplate plus Jackson do, with field names mapped by convention (`API/Models.swift`).
-- Two stores live for the whole run and are injected through the environment (`YourPersonApp.swift`): which paper is on screen and which profile this phone uses. Spring analogy: application-scoped beans.
+- One store lives for the whole run and is injected through the environment (`YourPersonApp.swift`): which profile this phone uses. Spring analogy: an application-scoped bean. There is one look, so there is no theme store: `Theme/Ink.swift` holds the ink colours, the one font, and the type sizes, and views read them directly.
+- The journal pieces live in `Components/`: `Page` (white paper, the folded corner, the swipe), `Typewriter` (the typing line with its three cursor states), `Word` (a tappable word; the app has no buttons), `Circled` (a word with an ink circle drawn around it), `Choices` (a list of them), `Line` (a text field with only a rule underneath), and `Small` (the grey text).
+
+### The typewriter and the circle
+
+Both animations are plain SwiftUI, no engine and no dependencies.
+
+- **Typing.** `Typewriter` keeps a character count in `@State`. A `.task(id: text)` loop sleeps for one character's worth of time (26 a second) and bumps the count; changing the text cancels the loop and starts over, and leaving the screen cancels it too, so there is nothing to clean up. The cursor is a non-breaking space and an underscore appended to the text so it can never wrap onto its own line. It is steady while typing, blinks (a second loop toggling its colour every half second) once the line is done and the page is waiting, and turns clear once the page has an answer. Each word's first character ticks the Taptic Engine through `Services/Haptics.swift`. Reduce Motion shows the finished line at once; a tap on the line does the same.
+- **The circle.** `Circled` lays an SVG-style path (one loop with a run-up and an overlap, drawn once in a 100 x 40 box) over the word as a SwiftUI `Shape`, scaled to the word's size. Picking the word animates `trim(from: 0, to: progress)` from 0 to 1 over 0.7 s on a curve that moves fast through the middle and slows into the overlap, which reads as a pen closing a loop. Unpicking sets it to 0 at once. A word that starts picked shows its circle without redrawing it.
+- **The page turn.** `Page` draws the fold as a filled triangle with a crease line in the bottom-right corner and listens for a horizontal drag anywhere on the page; a drag that is clearly sideways and long enough turns the page or, where allowed, goes back.
 - Navigation is a `NavigationStack`. Screens push and pop; the swipe-back gesture is free.
 - The app code is heavily commented. Start with `ios/YourPerson/YourPersonApp.swift` and follow the types.
 

@@ -32,8 +32,9 @@ cd api && npm install --legacy-peer-deps && npm run start:dev
 open ios/YourPerson.xcodeproj
 ```
 
-Choose any iPhone simulator, press Run (⌘R). The handwriting animation runs
-in the simulator; haptics do not, since the simulator has no Taptic Engine.
+Choose any iPhone simulator, press Run (⌘R). The typing and the circles
+run in the simulator; haptics do not, since the simulator has no Taptic
+Engine.
 
 ## 2. Your own iPhone
 
@@ -48,9 +49,9 @@ in the simulator; haptics do not, since the simulator has no Taptic Engine.
    asks you to trust the developer certificate under Settings > General >
    VPN & Device Management.
 
-Everything should be judged on the device, not the simulator: the pen speed,
-the tick per word, the tap at the end of a line, and how the script reads at
-arm's length.
+Everything should be judged on the device, not the simulator: the typing
+speed, the tick per word, the tap as the page turns, and how the typewriter
+face reads at arm's length.
 
 ## 3. TestFlight
 
@@ -72,13 +73,14 @@ changed afterwards.
 runner on every push, unsigned, so a broken build is caught without a Mac in
 the loop. It does not run on a device and cannot judge feel.
 
-## Changing the handwriting
+## Changing the typing
 
-- The pen's pace is `unitsPerSecond` in `ios/YourPerson/Handwriting/TextPlan.swift`,
-  and each `HandwritingView` can pass `speed:` to scale it.
-- Haptics are the `haptics:` flag on `HandwritingView` (ticks per word, a tap
-  at the end) plus the click in `Word`. Both live in `Handwriting/Haptics.swift`.
-- To change the hand, run `ios/scripts/build-typeface.mjs` on another
-  single-line SVG font (Inkscape's Hershey Text extension ships a dozen under
-  the SIL Open Font License) and drop the matching TTF into `Resources/`,
-  registering it in `Info.plist` under `UIAppFonts` and in `Theme/Typography.swift`.
+- The typing pace is `Typing.charactersPerSecond` in `ios/YourPerson/Theme/Ink.swift`,
+  and each `Typewriter` can pass `speed:` to override it.
+- Haptics are the `haptics:` flag on `Typewriter` (a tick per word) plus the
+  click in `Word` and the tap in the page fold. All live in `Services/Haptics.swift`.
+- The circle's shape is the path in `Components/Circled.swift`; its pace is the
+  0.7 s animation there.
+- To change the face, drop another TTF into `Resources/`, register it in
+  `Info.plist` under `UIAppFonts`, and point `Font.type` in `Theme/Ink.swift`
+  at its PostScript name.

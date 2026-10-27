@@ -1,10 +1,10 @@
 //
 //  Haptics.swift
 //
-//  The tactile side of the writing. Three feelings, named for what they mean:
+//  The tactile side of the page. Three feelings, named for what they mean:
 //
-//    tick     the pen starts a word; also any tap on a word
-//    tap      the line is finished
+//    tick     the typewriter starts a word; also any tap on a word
+//    tap      the page turns
 //    success  something was saved
 //
 //  UIKit's feedback generators are the lightest way to do this. `prepare()`

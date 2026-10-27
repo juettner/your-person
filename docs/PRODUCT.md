@@ -24,13 +24,14 @@ The user is one half of the couple. They set up a profile *about* their person. 
 
 | Screen | Purpose | Notes |
 | --- | --- | --- |
-| **Onboarding** | Set up the partner profile | A few handwritten pages. Page 1: name, circle interests from a list of words, one line: "What's going on in their world right now?" Then one page per chosen interest that goes deeper: Sports asks which sport, then which team, then fan or player; Music asks genres, then artists, then live shows or headphones. Every deeper answer is optional. |
-| **Today** | Show questions | A sheet of soft colour, like a letter. "Ask Sam." in the corner, and the question writes itself across the middle of the screen in a script hand, with a soft tick under your finger as each word starts. "Nope" hides it, "Good one" keeps it coming back, "Next" advances. Three per batch, then deal three more. |
-| **Profile** | Update the profile and pick a paper | Same pages as onboarding, pre-filled. Save from the first page or walk into the details. Five papers to choose from: linen, blush, sage, dusk, wine. |
+| **First pages** | Set up the partner profile | A few pages of a journal, one question each: "What do you call them?", "Where do they live?", "What are they into?" (tap a word to circle it in ink), then one page per follow-up for each circled interest (Sports asks which sport, then which team), and "What's going on in their world lately?" Every answer but the name is optional. Turn the page to go on. |
+| **Entry** | Show questions | One question per page, typed out in front of you. The date line at the top: "Tuesday, October 27 · 1 of 3". "keep" and "not for us" are words under the question; the one you pick is underlined. Turning the page without picking is "not now". After three, the last page says "That's three. Go talk to Sam." and turns to three more. |
+| **Their page** | Update the profile | One long page you can write on: name, city, the circled list, every follow-up, lately, dates that matter, the weekly nudge, the AI deck. "save" at the bottom. |
+| **What they said** | Read what they said | Their answers as quotes, newest first, with the date. |
 
 ### The look
 
-The shape comes from grug (Ocho, Apple Design Award 2026): a single colour, handwritten type, nothing else. The feel is a letter rather than a cave wall: a romantic script (Allura) on warm papers, written in front of you one letter at a time, with the phone ticking softly as the pen moves. No cards, borders, shadows, icons or buttons; actions are underlined words, chosen things are circled. `docs/ARCHITECTURE.md`, "The handwriting engine", explains how the writing animation works.
+A journal entry, not a transaction. White paper, black ink, one typewriter face (Special Elite). The question is the only loud thing on the page; everything else is small and grey. There are no buttons: actions are words. Picking something draws a circle around it in ink, as one pen stroke. The page turns from the folded corner at the bottom right, or with a swipe. The underscore after a line is steady while it types, blinks while the page waits on you, and goes away once you have answered. The phone ticks softly as each word starts. The shape of the idea came from grug (Ocho): one colour, one voice, nothing else; the journal is our own take on it. `docs/ARCHITECTURE.md`, "The typewriter and the circle", explains how the animations work.
 
 ### Where they live
 

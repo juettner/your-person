@@ -1,12 +1,13 @@
 //
-//  HandField.swift
+//  Line.swift
 //
-//  A line to write on. Handwritten font, a single rule underneath, no box.
+//  A line to write on: a text field with nothing but a rule underneath, the
+//  way a journal page has lines. Used for a name, a city, what they said.
 //
 
 import SwiftUI
 
-struct HandField: View {
+struct Line: View {
     let placeholder: String
     @Binding var text: String
     var size: CGFloat = TypeSize.body
@@ -17,14 +18,12 @@ struct HandField: View {
     var submitLabel: SubmitLabel = .done
     var onSubmit: (() -> Void)? = nil
 
-    @EnvironmentObject private var theme: ThemeStore
-
     var body: some View {
         VStack(spacing: 2) {
             field
-                .font(.hand(size))
-                .foregroundStyle(theme.paper.ink)
-                .tint(theme.paper.ink)
+                .font(.type(size))
+                .foregroundStyle(Ink.ink)
+                .tint(Ink.ink)
                 .keyboardType(keyboard)
                 .textInputAutocapitalization(capitalization)
                 .autocorrectionDisabled(!autocorrect)
@@ -33,14 +32,14 @@ struct HandField: View {
                 .padding(.vertical, 6)
                 .frame(minHeight: 44)
             Rectangle()
-                .fill(theme.paper.ink)
+                .fill(Ink.ink)
                 .frame(height: 1)
         }
     }
 
     @ViewBuilder
     private var field: some View {
-        let prompt = Text(placeholder).font(.hand(size)).foregroundColor(theme.paper.muted)
+        let prompt = Text(placeholder).font(.type(size)).foregroundColor(Ink.faint)
         if multiline {
             TextField("", text: $text, prompt: prompt, axis: .vertical)
                 .lineLimit(2...6)

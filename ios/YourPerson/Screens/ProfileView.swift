@@ -1,20 +1,31 @@
 //
 //  ProfileView.swift
 //
-//  Edit the partner profile: the pages, dates that matter, the weekly nudge,
-//  the paper, and the way to "What they said".
+//  Their page: everything the journal knows about your person, on one long
+//  page you can write on. Name, where they live, what they're into with
+//  every follow-up, what's going on lately, dates that matter, the weekly
+//  nudge, and the AI deck. "save" at the bottom; "start over" below it.
 //
 
 import SwiftUI
 
 struct ProfileView: View {
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var theme: ThemeStore
     @EnvironmentObject private var profiles: ProfileStore
 
     @State private var profile: Profile? = nil
+    @State private var options: [Interest] = []
     @State private var error: String? = nil
+
+    @State private var name = ""
+    @State private var location: ProfileLocation? = nil
+    @State private var locating = false
+    @State private var interests: [String] = []
+    @State private var details: InterestDetails = [:]
+    @State private var lately = ""
     @State private var dates: [ImportantDate] = []
+    @State private var saving = false
+
     @State private var reminder: ReminderSetting = Reminders.load()
     @State private var reminderNote: String? = nil
     @State private var aiNote: String? = nil
@@ -22,31 +33,30 @@ struct ProfileView: View {
     @State private var showMemories = false
 
     var body: some View {
-        Screen {
-            if let error {
-                VStack(alignment: .leading, spacing: 32) {
-                    header
-                    Hand(error, tone: .muted)
+        Page {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Word("back", tone: .grey, size: TypeSize.small) { dismiss() }
+                    Spacer()
+                    Word("what they said", tone: .grey, size: TypeSize.small) { showMemories = true }
                 }
-            } else if let profile {
-                ProfileFormView(
-                    mode: .edit,
-                    title: "Your person.",
-                    submitLabel: "Save",
-                    initial: profile.input,
-                    header: AnyView(header),
-                    afterCard: AnyView(afterCard),
-                    footer: AnyView(footer(profile))
-                ) { input in
-                    var values = input
-                    values.dates = dates
-                    _ = try await APIClient.shared.updateProfile(profile.id, values)
-                    dismiss()
-                }
-            } else {
-                VStack(alignment: .leading, spacing: 32) {
-                    header
-                    Thinking()
+                .frame(minHeight: 24)
+
+                if let profile {
+                    ScrollView(showsIndicators: false) {
+                        page(profile)
+                            .padding(.top, 24)
+                            .padding(.bottom, Margin.bottom)
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                } else {
+                    Spacer()
+                    if let error {
+                        Typewriter(text: error, size: TypeSize.heading)
+                    } else {
+                        Typewriter(text: "", haptics: false)
+                    }
+                    Spacer()
                 }
             }
         }
@@ -54,92 +64,120 @@ struct ProfileView: View {
         .task { await load() }
     }
 
-    // MARK: - Pieces
+    // MARK: - The page
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Word("Back", size: TypeSize.small) { dismiss() }
-                Spacer()
-                Word("What they said", size: TypeSize.small) { showMemories = true }
-            }
-            VStack(alignment: .leading, spacing: 8) {
-                Hand("Paper", size: TypeSize.small, tone: .muted)
-                WordChoice(
-                    options: Paper.allCases.map { Choice(id: $0.rawValue, label: $0.name) },
-                    selected: Binding(
-                        get: { [theme.paper.rawValue] },
-                        set: { ids in
-                            if let first = ids.first, let paper = Paper(rawValue: first) { theme.paper = paper }
-                        }
-                    )
-                )
-            }
-        }
-    }
-
-    private var afterCard: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            VStack(alignment: .leading, spacing: 8) {
-                Hand("Dates that matter", size: TypeSize.small, tone: .muted)
-                DatesEditorView(dates: $dates)
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Hand("Weekly nudge", size: TypeSize.small, tone: .muted)
-                HStack(spacing: 16) {
-                    Hand("Remind me once a week")
-                    Spacer()
-                    WordChoice(
-                        options: [Choice(id: "on", label: "On"), Choice(id: "off", label: "Off")],
-                        selected: Binding(
-                            get: { [reminder.enabled ? "on" : "off"] },
-                            set: { ids in
-                                if let first = ids.first { Task { await toggleReminder(first == "on") } }
-                            }
-                        ),
-                        size: TypeSize.small
-                    )
-                }
-                Hand(reminderLine, size: TypeSize.small, tone: .muted)
-                Word("Change the day", variant: .quiet, size: TypeSize.small) { Task { await cycleWeekday() } }
-                if let reminderNote {
-                    Hand(reminderNote, size: TypeSize.small, tone: .muted)
-                }
-            }
-        }
-    }
-
-    private func footer(_ profile: Profile) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if profile.hiddenCount > 0 {
-                Hand("You've hidden \(profile.hiddenCount) question\(profile.hiddenCount == 1 ? "" : "s").", size: TypeSize.small, tone: .muted)
-            }
-            if profile.aiQuestionCount > 0 {
-                Hand("\(profile.aiQuestionCount) question\(profile.aiQuestionCount == 1 ? "" : "s") written just for \(profile.name).", size: TypeSize.small, tone: .muted)
-            }
-            Word(generating ? "Writing..." : "Write new AI questions", disabled: generating, size: TypeSize.small) {
-                Task { await refreshAI(profile) }
-            }
-            if let aiNote {
-                Hand(aiNote, size: TypeSize.small, tone: .muted)
-            }
-            Word("Start over with a new profile", variant: .quiet, size: TypeSize.small) {
-                dismiss()
-                profiles.profileId = nil
-            }
-            // Credit where it is due.
-            Hand("The hand is Allura, by Rob Leuschke, traced as pen strokes by Sheldon B. Michaels and Windell H. Oskay. SIL Open Font License.", size: TypeSize.small, tone: .muted)
-                .padding(.top, 24)
-        }
-        .padding(.top, 16)
-    }
-
-    private var reminderLine: String {
+    private func page(_ profile: Profile) -> some View {
+        let chosen = options.filter { interests.contains($0.id) && !$0.followUps.isEmpty }
         let hour12 = reminder.hour > 12 ? reminder.hour - 12 : reminder.hour
         let ampm = reminder.hour >= 12 ? "pm" : "am"
         let weekday = Reminders.weekdays[max(0, min(6, reminder.weekday - 1))]
-        return "\(weekday)s at \(hour12)\(ampm). Off by default, on purpose."
+
+        return VStack(alignment: .leading, spacing: 4) {
+            Line(placeholder: "Sam", text: $name, size: TypeSize.heading, capitalization: .words, autocorrect: false)
+                .accessibilityLabel("Their name")
+
+            label("where they live")
+            Line(
+                placeholder: "Minneapolis",
+                text: Binding(
+                    get: { location?.city ?? "" },
+                    set: { city in location = city.isEmpty ? nil : ProfileLocation(city: city) }
+                ),
+                capitalization: .words,
+                autocorrect: false
+            )
+            .accessibilityLabel("Where they live")
+            Word(locating ? "finding you" : "use my location", tone: .grey, disabled: locating, size: TypeSize.small) {
+                Task { await useMyLocation() }
+            }
+
+            label("into")
+            Choices(options: options.map { Choice(id: $0.id, label: $0.label.lowercased()) }, selected: $interests, multi: true)
+
+            ForEach(chosen) { interest in
+                label(interest.label.lowercased())
+                ForEach(interest.followUps) { followUp in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Small(followUp.prompt, tone: .muted)
+                        FollowUpAnswer(
+                            followUp: followUp,
+                            value: Binding(
+                                get: { details[interest.id]?[followUp.id] },
+                                set: { details[interest.id, default: [:]][followUp.id] = $0 }
+                            )
+                        )
+                    }
+                    .padding(.top, 8)
+                }
+            }
+
+            label("lately")
+            Line(placeholder: "what's going on in their world", text: $lately, multiline: true)
+                .accessibilityLabel("What is going on in their world lately")
+
+            label("dates that matter")
+            DatesEditorView(dates: $dates)
+
+            label("weekly nudge")
+            HStack(spacing: 24) {
+                Word("off", tone: reminder.enabled ? .faint : .ink, marked: !reminder.enabled) {
+                    if reminder.enabled { Task { await toggleReminder() } }
+                }
+                .accessibilityLabel("Weekly reminder off")
+                Word("on", tone: reminder.enabled ? .ink : .faint, marked: reminder.enabled) {
+                    if !reminder.enabled { Task { await toggleReminder() } }
+                }
+                .accessibilityLabel("Weekly reminder on")
+                Word("\(weekday)s at \(hour12)\(ampm)", tone: .grey) { Task { await cycleWeekday() } }
+                    .accessibilityLabel("Change the day")
+            }
+            if let reminderNote {
+                Small(reminderNote)
+            }
+
+            label("questions written for \(profile.name)")
+            Small(deckLine(profile), tone: .muted)
+            Word(generating ? "writing" : "write new ones", tone: .grey, disabled: generating, size: TypeSize.small) {
+                Task { await refreshAI(profile) }
+            }
+            .accessibilityLabel("Write new AI questions")
+            if let aiNote {
+                Small(aiNote)
+            }
+
+            if let error {
+                Small(error)
+                    .padding(.top, 16)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                Word(saving ? "saving" : "save", disabled: saving || name.trimmingCharacters(in: .whitespaces).isEmpty, size: TypeSize.body) {
+                    Task { await save(profile) }
+                }
+                .accessibilityLabel("Save")
+                Word("start over", tone: .grey) {
+                    dismiss()
+                    profiles.profileId = nil
+                }
+                .accessibilityLabel("Start over with a new profile")
+            }
+            .padding(.top, 32)
+
+            // Credit where it is due.
+            Small("The type is Special Elite, by Astigmatic. Apache License 2.0.")
+                .padding(.top, 32)
+        }
+    }
+
+    private func label(_ text: String) -> some View {
+        Small(text)
+            .padding(.top, 32)
+    }
+
+    private func deckLine(_ profile: Profile) -> String {
+        var parts: [String] = []
+        if profile.aiQuestionCount > 0 { parts.append("\(profile.aiQuestionCount) in the deck.") }
+        if profile.hiddenCount > 0 { parts.append("\(profile.hiddenCount) marked not for us.") }
+        return parts.isEmpty ? "Nothing yet." : parts.joined(separator: " ")
     }
 
     // MARK: - Actions
@@ -147,27 +185,67 @@ struct ProfileView: View {
     private func load() async {
         guard let profileId = profiles.profileId else { return }
         do {
-            let loaded = try await APIClient.shared.getProfile(profileId)
-            profile = loaded
-            dates = loaded.dates
+            async let loaded = APIClient.shared.getProfile(profileId)
+            async let taxonomy = APIClient.shared.listInterests()
+            let (profile, interestsList) = try await (loaded, taxonomy)
+            self.profile = profile
+            options = interestsList
+            name = profile.name
+            location = profile.location
+            interests = profile.interests
+            details = profile.interestDetails ?? [:]
+            lately = profile.currentFocus ?? ""
+            dates = profile.dates
         } catch {
             self.error = describe(error)
         }
     }
 
-    private func toggleReminder(_ enabled: Bool) async {
+    private func save(_ profile: Profile) async {
+        guard !saving else { return }
+        saving = true
+        error = nil
+        do {
+            let city = location?.city.trimmingCharacters(in: .whitespaces) ?? ""
+            var cleaned = location
+            cleaned?.city = city
+            let focus = lately.trimmingCharacters(in: .whitespacesAndNewlines)
+            _ = try await APIClient.shared.updateProfile(profile.id, ProfileInput(
+                name: name.trimmingCharacters(in: .whitespaces),
+                interests: interests,
+                interestDetails: details,
+                location: city.isEmpty ? nil : cleaned,
+                dates: dates,
+                currentFocus: focus.isEmpty ? nil : focus
+            ))
+            dismiss()
+        } catch {
+            self.error = describe(error)
+            saving = false
+        }
+    }
+
+    private func useMyLocation() async {
+        locating = true
+        if case .ok(let found) = await LocationService().detect() {
+            location = found
+        }
+        locating = false
+    }
+
+    private func toggleReminder() async {
         var next = reminder
-        next.enabled = enabled
+        next.enabled.toggle()
         reminder = next
-        let on = await Reminders.apply(next, askName: profile?.name ?? "them")
-        reminderNote = enabled && !on ? "Could not schedule it. Reminders need notification permission in Settings." : nil
+        let on = await Reminders.apply(next, askName: name.isEmpty ? "them" : name)
+        reminderNote = next.enabled && !on ? "Could not schedule it. Reminders need notification permission in Settings." : nil
     }
 
     private func cycleWeekday() async {
         var next = reminder
         next.weekday = (reminder.weekday % 7) + 1
         reminder = next
-        if next.enabled { _ = await Reminders.apply(next, askName: profile?.name ?? "them") }
+        if next.enabled { _ = await Reminders.apply(next, askName: name.isEmpty ? "them" : name) }
     }
 
     /// Ask the server to write a fresh AI deck. Harmless when the engine is off.
@@ -177,7 +255,7 @@ struct ProfileView: View {
         do {
             let result = try await APIClient.shared.generate(profile.id)
             aiNote = result.enabled
-                ? "Wrote \(result.generated) new question\(result.generated == 1 ? "" : "s") for \(profile.name)."
+                ? "Wrote \(result.generated) new question\(result.generated == 1 ? "" : "s") for \(name)."
                 : "AI questions are switched off on this server."
             self.profile = try await APIClient.shared.getProfile(profile.id)
         } catch {

@@ -1,6 +1,6 @@
 # Your Person
 
-An app that helps couples stay curious about each other. You fill in a short profile of your person, and the app hands you a couple of simple questions that get a real conversation going. Rate questions with a thumb to shape what you see next.
+An app that helps couples stay curious about each other. You fill in a short profile of your person, and the app hands you a couple of simple questions that get a real conversation going. Mark a question "keep" or "not for us" to shape what you see next.
 
 iPhone only, built natively in Swift and SwiftUI. The API is shared with nothing else, so it stays small.
 
@@ -51,7 +51,7 @@ CI runs both: the API on Linux, the app on a macOS runner.
 
 ## The look
 
-The UI takes its shape from grug: one colour, handwritten type, and the question of the moment writes itself across the screen, with a soft haptic tick as each word starts. The hand is Allura, a romantic script by Rob Leuschke, traced as pen strokes (EMS Allure) by Sheldon B. Michaels and Windell H. Oskay; both under the SIL Open Font License. It is drawn with SwiftUI's Canvas and nothing else; `docs/ARCHITECTURE.md`, "The handwriting engine", explains how.
+A journal entry, not a transaction. White paper, black ink, one typewriter face (Special Elite, by Astigmatic, Apache License 2.0). The question of the moment types itself out in front of you, with a soft haptic tick as each word starts, and the underscore after it blinks until you answer. There are no buttons: actions are words, picking something draws a circle around it in ink, and the page turns from the folded corner at the bottom right. `docs/PRODUCT.md`, "The look", has the rules; `docs/ARCHITECTURE.md`, "The typewriter and the circle", has the mechanics.
 
 ## Why `--legacy-peer-deps`
 
