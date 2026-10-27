@@ -10,8 +10,9 @@
 //    ...
 //    What's going on in their world lately?
 //
-//  Turn the page (the fold, or swipe left) to go on; swipe right or tap
-//  "back" to go back. The last page's fold starts the journal.
+//  Turn the page (the fold, swipe left, or return on a one-line page) to go
+//  on; swipe right or tap "back" to go back. The last page's fold starts
+//  the journal.
 //
 //  The pages are computed from the answers so far: circling "cooking" on
 //  the third page adds the cooking follow-ups after it. Form state is plain
@@ -112,9 +113,16 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 0) {
             Spacer()
             Typewriter(text: "What do you call them?", answered: !name.trimmingCharacters(in: .whitespaces).isEmpty, size: TypeSize.heading)
-            Line(placeholder: "Sam", text: $name, size: 24, capitalization: .words, autocorrect: false)
-                .accessibilityLabel("Their name")
-                .padding(.top, 32)
+            Line(placeholder: "Sam", text: $name, size: 24, capitalization: .words, autocorrect: false, submitLabel: .next) {
+                if canTurn { turn() }
+            }
+            .accessibilityLabel("Their name")
+            .padding(.top, 32)
+            // The first time anyone meets the fold, say what it is for.
+            if canTurn {
+                Small("then turn the page: the corner, a swipe, or return.")
+                    .padding(.top, 24)
+            }
             Spacer()
         }
         .padding(.bottom, Margin.bottom)
@@ -133,7 +141,9 @@ struct OnboardingView: View {
                 ),
                 size: 24,
                 capitalization: .words,
-                autocorrect: false
+                autocorrect: false,
+                submitLabel: .next,
+                onSubmit: { turn() }
             )
             .accessibilityLabel("Where they live")
             .padding(.top, 32)
