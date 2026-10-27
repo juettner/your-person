@@ -1,20 +1,20 @@
 /**
- * What they said. The list of memories written down after questions, newest first.
+ * What they said: their answers, written down as quotes, newest first.
  */
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
-import { Screen } from '@/components/Screen';
-import { usePalette } from '@/components/ThemeProvider';
-import { LegacyFonts, Spacing } from "@/constants/theme";
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Page } from '@/components/Page';
+import { Small } from '@/components/Small';
+import { Typewriter } from '@/components/Typewriter';
+import { Word } from '@/components/Word';
+import { Fonts, Ink, Margin, Spacing, Type } from '@/constants/theme';
 import { api, describeError, Memory } from '@/lib/api';
 import { getProfileId } from '@/lib/profile-store';
 
 export default function MemoriesScreen() {
-  const p = usePalette();
   const [profileId, setProfileId] = useState<string | null>(null);
+  const [askName, setAskName] = useState('');
   const [memories, setMemories] = useState<Memory[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,8 +29,10 @@ export default function MemoriesScreen() {
             return;
           }
           setProfileId(id);
-          const list = await api.listMemories(id);
-          if (!cancelled) setMemories(list);
+          const [list, profile] = await Promise.all([api.listMemories(id), api.getProfile(id)]);
+          if (cancelled) return;
+          setMemories(list);
+          setAskName(profile.name);
         } catch (err) {
           if (!cancelled) setError(describeError(err));
         }
@@ -52,61 +54,48 @@ export default function MemoriesScreen() {
   };
 
   return (
-    <Screen>
-      <View style={styles.header}>
-        <Button title="Back" variant="link" onPress={() => router.back()} style={styles.back} />
-        <Text style={[styles.title, { color: p.onGround }]} accessibilityRole="header">
-          What they said.
-        </Text>
+    <Page>
+      <View style={styles.topLine}>
+        <Word label="back" tone="grey" size={Type.small} onPress={() => router.back()} style={styles.topWord} />
+        <Small>{askName ? `${askName} said` : ' '}</Small>
       </View>
 
-      {error && <Text style={[styles.error, { color: p.danger }]}>{error}</Text>}
+      {error && <Small style={styles.error}>{error}</Small>}
 
-      {memories === null ? (
-        <ActivityIndicator color={p.onGround} style={styles.spinner} />
-      ) : memories.length === 0 ? (
-        <Card contentStyle={styles.emptyCard}>
-          <Text style={[styles.emptyTitle, { color: p.ink }]}>Nothing yet.</Text>
-          <Text style={[styles.emptyText, { color: p.muted }]}>
-            After you ask a question, jot down what they said. It shows up here, and it makes the next questions better.
-          </Text>
-        </Card>
+      {memories && memories.length === 0 ? (
+        <View style={styles.middle}>
+          <Typewriter text="Nothing yet. After a question, write down what they said. It makes the next questions better." size={Type.heading} answered />
+        </View>
       ) : (
-        <FlatList
-          data={memories}
-          keyExtractor={(m) => m.id}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <Card contentStyle={styles.memoryCard}>
-              {item.questionText ? <Text style={[styles.question, { color: p.muted }]}>{item.questionText}</Text> : null}
-              <Text style={[styles.text, { color: p.ink }]}>{item.text}</Text>
-              <View style={styles.footer}>
-                <Text style={[styles.date, { color: p.muted }]}>{new Date(item.createdAt).toLocaleDateString()}</Text>
-                <Button title="Remove" variant="link" tone="card" onPress={() => remove(item)} style={styles.remove} />
+        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          {(memories ?? []).map((memory) => (
+            <View key={memory.id} style={styles.quote}>
+              <Text style={styles.quoteText}>{`“${memory.text}”`}</Text>
+              <View style={styles.quoteLine}>
+                <Small>{new Date(memory.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Small>
+                <Word label="remove" tone="grey" size={Type.small} onPress={() => remove(memory)} accessibilityLabel={`Remove: ${memory.text}`} style={styles.remove} />
               </View>
-            </Card>
-          )}
-        />
+            </View>
+          ))}
+        </ScrollView>
       )}
-    </Screen>
+    </Page>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { gap: Spacing.sm, paddingBottom: Spacing.md },
-  back: { alignSelf: 'flex-start' },
-  title: { fontFamily: LegacyFonts.extraBold, fontSize: 34, lineHeight: 38, letterSpacing: -1 },
-  error: { fontFamily: LegacyFonts.bold, fontSize: 14, marginBottom: Spacing.sm },
-  spinner: { marginTop: Spacing.xxl },
-  list: { gap: Spacing.md, paddingRight: 6, paddingBottom: Spacing.xl },
-  emptyCard: { gap: Spacing.sm },
-  emptyTitle: { fontFamily: LegacyFonts.extraBold, fontSize: 24 },
-  emptyText: { fontFamily: LegacyFonts.medium, fontSize: 16, lineHeight: 23 },
-  memoryCard: { gap: Spacing.sm, padding: Spacing.md + 4 },
-  question: { fontFamily: LegacyFonts.medium, fontSize: 14 },
-  text: { fontFamily: LegacyFonts.bold, fontSize: 19, lineHeight: 26 },
-  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  date: { fontFamily: LegacyFonts.medium, fontSize: 13 },
-  remove: { minHeight: 32 },
+  topLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 24 },
+  topWord: { minHeight: 24 },
+  error: { marginTop: Spacing.md },
+  middle: { flex: 1, justifyContent: 'center', paddingBottom: Margin.bottom },
+  list: { paddingTop: Spacing.xxl, paddingBottom: Margin.bottom, gap: Spacing.xl },
+  quote: { gap: Spacing.xs },
+  quoteText: {
+    fontFamily: Fonts.type,
+    fontSize: 20,
+    lineHeight: 32,
+    color: Ink.ink,
+  },
+  quoteLine: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  remove: { minHeight: 24 },
 });

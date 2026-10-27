@@ -15,7 +15,7 @@ The user is one half of the couple. They set up a profile *about* their person. 
 1. **Simplicity is the feature.** One screen with one question beats a dashboard. Every added field has to earn its place.
 2. **Prompts, not advice.** The app never tells you how to have a relationship. It just hands you a good question and gets out of the way.
 2a. **Positive by design.** Every question points at something they enjoy, are proud of, look forward to, or would love more of. The bank never asks someone to list problems, dreads, or what their partner does wrong. When a detail is a stressor, the question is about the relief or the win. The AI engine has the same rule in its instructions.
-3. **The user is the editor.** A thumbs-down hides a question for good. A thumbs-up nudges more like it. The question bank gets better for *this* couple over time.
+3. **The user is the editor.** "not for us" hides a question for good. "keep" nudges more like it. The question bank gets better for *this* couple over time.
 4. **Low ceremony.** No account to create for the MVP. No daily streaks or guilt. Open it when you want a question.
 
 ## MVP scope
@@ -24,9 +24,14 @@ The user is one half of the couple. They set up a profile *about* their person. 
 
 | Screen | Purpose | Notes |
 | --- | --- | --- |
-| **Onboarding** | Set up the partner profile | A short stack of index cards. Card 1: name, pick interests from chips, one free-text box: "What's going on in their world lately?" Then one card per chosen interest that goes deeper: Sports asks which sport, then which team, then fan or player; Music asks genres, then artists, then live shows or headphones. Every deeper answer is optional. |
-| **Today** | Show questions | One question on a card. Big text. "Ask Sam" at the top. "Nope" hides it, "Good one" keeps it coming back, "Next card" advances. Three per batch, then deal three more. |
-| **Profile** | Update the profile and pick a look | Same cards as onboarding, pre-filled. Save from the first card or walk into the details. Five color palettes to choose from. |
+| **First pages** | Set up the partner profile | A few pages of a journal, one question each: "What do you call them?", "Where do they live?", "What are they into?" (tap a word to circle it in ink), then one page per follow-up for each circled interest (Sports asks which sport, then which team), and "What's going on in their world lately?" Every answer but the name is optional. Turn the page to go on. |
+| **Entry** | Show questions | One question per page, typed out in front of you. The date line at the top: "Tuesday, October 27 · 1 of 3". "keep" and "not for us" are words under the question; the one you pick is underlined. Turning the page without picking is "not now". After three, the last page says "That's three. Go talk to Sam." and turns to three more. |
+| **Their page** | Update the profile | One long page you can write on: name, city, the circled list, every follow-up, lately, dates that matter, the weekly nudge, the AI deck. "save" at the bottom. |
+| **What they said** | Read what they said | Their answers as quotes, newest first, with the date. |
+
+### The look
+
+A journal entry, not a transaction. White paper, black ink, one typewriter face (Special Elite). The question is the only loud thing on the page; everything else is small and grey. There are no buttons: actions are words. Picking something draws a circle around it in ink, as one pen stroke. The page turns from the folded corner at the bottom right, or with a swipe. The underscore after a line is steady while it types, blinks while the page waits on you, and goes away once you have answered.
 
 ### Where they live
 
@@ -58,7 +63,7 @@ After any question, one line: "What did Sam say?" Those memories live on their o
 
 - Questions are chosen from a curated bank. Each question is tagged with interests. A profile sees general questions, ones matching its interests, and, favoured above both, ones built from its follow-up answers.
 - Recently shown questions are avoided until the pool runs dry.
-- Thumbs-down hides a question permanently for that profile. Thumbs-up makes it slightly more likely to come back later.
+- "not for us" hides a question permanently for that profile. "keep" makes it slightly more likely to come back later.
 - The profile is stored on the server and its id is kept on the device. Reinstalling the app loses the link to the profile. Acceptable for an MVP; accounts fix it later.
 
 ### Not in the MVP

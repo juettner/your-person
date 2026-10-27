@@ -1,13 +1,13 @@
 /**
- * A short list of dates that matter: label, month, day. Controlled like the
- * chips: the parent owns the list. Kept deliberately plain: three inputs and
- * an "Add" button beat a date picker for "Mom's birthday, March 3".
+ * The dates that matter: label, month, day. Written as a short list with a
+ * line to add one more. Controlled like the rest: the parent owns the list.
  */
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Button } from '@/components/Button';
-import { usePalette } from '@/components/ThemeProvider';
-import { LegacyFonts, Radius, Spacing } from "@/constants/theme";
+import { StyleSheet, Text, View } from 'react-native';
+import { Line } from '@/components/Line';
+import { Small } from '@/components/Small';
+import { Word } from '@/components/Word';
+import { Fonts, Ink, Spacing, Type } from '@/constants/theme';
 import type { ImportantDate } from '@/lib/api';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -18,7 +18,6 @@ interface DatesEditorProps {
 }
 
 export function DatesEditor({ dates, onChange }: DatesEditorProps) {
-  const p = usePalette();
   const [label, setLabel] = useState('');
   const [month, setMonth] = useState('');
   const [day, setDay] = useState('');
@@ -35,101 +34,55 @@ export function DatesEditor({ dates, onChange }: DatesEditorProps) {
     setDay('');
   };
 
-  const remove = (index: number) => onChange(dates.filter((_, i) => i !== index));
-
-  const inputStyle = [styles.input, { color: p.ink, borderColor: p.ink, backgroundColor: p.card }];
-
   return (
     <View style={styles.wrap}>
       {dates.map((date, i) => (
-        <View key={`${date.label}-${date.month}-${date.day}-${i}`} style={[styles.row, { borderColor: p.ink }]}>
-          <Text style={[styles.rowText, { color: p.ink }]}>
+        <View key={`${date.label}-${date.month}-${date.day}-${i}`} style={styles.row}>
+          <Text style={styles.rowText}>
             {date.label}
-            <Text style={{ color: p.muted }}>{`  ${MONTHS[date.month - 1]} ${date.day}`}</Text>
+            <Small>{`  ${MONTHS[date.month - 1]} ${date.day}`}</Small>
           </Text>
-          <Pressable onPress={() => remove(i)} accessibilityRole="button" accessibilityLabel={`Remove ${date.label}`} hitSlop={8}>
-            <Text style={[styles.remove, { color: p.muted }]}>Remove</Text>
-          </Pressable>
+          <Word label="remove" tone="grey" size={Type.small} onPress={() => onChange(dates.filter((_, j) => j !== i))} accessibilityLabel={`Remove ${date.label}`} />
         </View>
       ))}
 
       <View style={styles.form}>
-        <TextInput
-          value={label}
-          onChangeText={setLabel}
-          placeholder="Mom's birthday"
-          placeholderTextColor={p.muted}
-          maxLength={60}
-          style={[...inputStyle, styles.labelInput]}
-          accessibilityLabel="Date label"
-        />
-        <TextInput
-          value={month}
-          onChangeText={setMonth}
-          placeholder="MM"
-          placeholderTextColor={p.muted}
-          keyboardType="number-pad"
-          maxLength={2}
-          style={[...inputStyle, styles.numInput]}
-          accessibilityLabel="Month"
-        />
-        <TextInput
-          value={day}
-          onChangeText={setDay}
-          placeholder="DD"
-          placeholderTextColor={p.muted}
-          keyboardType="number-pad"
-          maxLength={2}
-          style={[...inputStyle, styles.numInput]}
-          accessibilityLabel="Day"
-        />
+        <Line value={label} onChangeText={setLabel} placeholder="Mom's birthday" maxLength={60} style={styles.labelInput} accessibilityLabel="Date label" />
+        <Line value={month} onChangeText={setMonth} placeholder="MM" keyboardType="number-pad" maxLength={2} style={styles.numInput} accessibilityLabel="Month" />
+        <Line value={day} onChangeText={setDay} placeholder="DD" keyboardType="number-pad" maxLength={2} style={styles.numInput} accessibilityLabel="Day" />
       </View>
-      <Button title="Add date" variant="outline" onPress={add} disabled={!canAdd} style={styles.addButton} />
+      <Word label="add" tone={canAdd ? 'ink' : 'faint'} onPress={add} disabled={!canAdd} accessibilityLabel="Add date" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    paddingVertical: Spacing.sm,
+    gap: Spacing.md,
   },
   rowText: {
-    fontFamily: LegacyFonts.bold,
-    fontSize: 15,
+    fontFamily: Fonts.type,
+    fontSize: Type.body,
+    color: Ink.ink,
     flex: 1,
-  },
-  remove: {
-    fontFamily: LegacyFonts.bold,
-    fontSize: 13,
-    textDecorationLine: 'underline',
   },
   form: {
     flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  input: {
-    fontFamily: LegacyFonts.medium,
-    fontSize: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 2,
-    borderRadius: Radius.md,
+    gap: Spacing.md,
+    alignItems: 'flex-end',
   },
   labelInput: {
     flex: 1,
+    minWidth: 0, // let it shrink on web, where inputs have an intrinsic width
   },
   numInput: {
-    width: 64,
+    width: 56,
     textAlign: 'center',
-  },
-  addButton: {
-    minHeight: 44,
   },
 });

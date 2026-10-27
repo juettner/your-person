@@ -1,29 +1,44 @@
 /**
- * Edit the partner profile: the cards, dates that matter, the weekly nudge,
- * the look, and the way to "what they said".
+ * Their page: everything the journal knows about your person, on one long
+ * page you can write on. Name, where they live, what they're into with
+ * every follow-up, what's going on lately, dates that matter, the weekly
+ * nudge, and the AI deck. "save" at the bottom; "start over" below it.
  */
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Switch, Text, View } from 'react-native';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { DatesEditor } from '@/components/DatesEditor';
-import { ProfileForm } from '@/components/ProfileForm';
-import { Screen } from '@/components/Screen';
-import { ThemePicker } from '@/components/ThemePicker';
-import { usePalette } from '@/components/ThemeProvider';
-import { LegacyFonts, Spacing } from "@/constants/theme";
-import { api, describeError, ImportantDate, Profile, ProfileInput } from '@/lib/api';
+import { FollowUpAnswer } from '@/components/FollowUpAnswer';
+import { Interests } from '@/components/Interests';
+import { Line } from '@/components/Line';
+import { Page } from '@/components/Page';
+import { Small } from '@/components/Small';
+import { Typewriter } from '@/components/Typewriter';
+import { Word } from '@/components/Word';
+import { Margin, Spacing, Type } from '@/constants/theme';
+import { api, describeError, ImportantDate, Interest, InterestDetails, Profile, ProfileLocation } from '@/lib/api';
+import { detectLocation } from '@/lib/location';
 import { clearProfileId, getProfileId } from '@/lib/profile-store';
 import { applyReminder, DEFAULT_REMINDER, loadReminder, ReminderSetting, WEEKDAYS } from '@/lib/reminders';
 
 export default function ProfileScreen() {
-  const p = usePalette();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [options, setOptions] = useState<Interest[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const [name, setName] = useState('');
+  const [location, setLocation] = useState<ProfileLocation | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [interests, setInterests] = useState<string[]>([]);
+  const [details, setDetails] = useState<InterestDetails>({});
+  const [lately, setLately] = useState('');
   const [dates, setDates] = useState<ImportantDate[]>([]);
+  const [saving, setSaving] = useState(false);
+
   const [reminder, setReminder] = useState<ReminderSetting>(DEFAULT_REMINDER);
   const [reminderNote, setReminderNote] = useState<string | null>(null);
+  const [aiNote, setAiNote] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,9 +49,15 @@ export default function ProfileScreen() {
           router.replace('/onboarding');
           return;
         }
-        const [loaded, savedReminder] = await Promise.all([api.getProfile(id), loadReminder()]);
+        const [loaded, taxonomy, savedReminder] = await Promise.all([api.getProfile(id), api.listInterests(), loadReminder()]);
         if (cancelled) return;
         setProfile(loaded);
+        setOptions(taxonomy);
+        setName(loaded.name);
+        setLocation(loaded.location ?? null);
+        setInterests(loaded.interests);
+        setDetails(loaded.interestDetails ?? {});
+        setLately(loaded.currentFocus ?? '');
         setDates(loaded.dates);
         setReminder(savedReminder);
       } catch (err) {
@@ -48,10 +69,25 @@ export default function ProfileScreen() {
     };
   }, []);
 
-  const save = async (values: ProfileInput) => {
-    if (!profile) return;
-    await api.updateProfile(profile.id, { ...values, dates });
-    router.back();
+  const save = async () => {
+    if (!profile || saving || !name.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const city = location?.city.trim();
+      await api.updateProfile(profile.id, {
+        name: name.trim(),
+        interests,
+        interestDetails: details,
+        location: city ? { ...location, city } : null,
+        currentFocus: lately.trim() || undefined,
+        dates,
+      });
+      router.back();
+    } catch (err) {
+      setError(describeError(err));
+      setSaving(false);
+    }
   };
 
   const startOver = async () => {
@@ -59,43 +95,41 @@ export default function ProfileScreen() {
     router.replace('/onboarding');
   };
 
-  const toggleReminder = async (enabled: boolean) => {
-    const next = { ...reminder, enabled };
+  const useMyLocation = async () => {
+    setLocating(true);
+    const result = await detectLocation();
+    if (result.status === 'ok') setLocation(result.location);
+    setLocating(false);
+  };
+
+  const toggleReminder = async () => {
+    const next = { ...reminder, enabled: !reminder.enabled };
     setReminder(next);
-    const on = await applyReminder(next, profile?.name ?? 'them');
-    if (enabled && !on) {
-      setReminderNote(
-        Platform.OS === 'web'
+    const on = await applyReminder(next, name || 'them');
+    setReminderNote(
+      next.enabled && !on
+        ? Platform.OS === 'web'
           ? 'Reminders work in the phone app, not in the browser.'
-          : 'Could not schedule it here. Reminders need the installed app and notification permission.',
-      );
-    } else {
-      setReminderNote(null);
-    }
+          : 'Could not schedule it here. Reminders need the installed app and notification permission.'
+        : null,
+    );
   };
 
   const cycleWeekday = async () => {
     const next = { ...reminder, weekday: (reminder.weekday % 7) + 1 };
     setReminder(next);
-    if (next.enabled) await applyReminder(next, profile?.name ?? 'them');
+    if (next.enabled) await applyReminder(next, name || 'them');
   };
 
   // Ask the server to write a fresh AI deck. Harmless when the engine is off.
-  const [aiNote, setAiNote] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
   const refreshAi = async () => {
     if (!profile) return;
     setGenerating(true);
     setAiNote(null);
     try {
       const res = await api.generate(profile.id);
-      setAiNote(
-        res.enabled
-          ? `Wrote ${res.generated} new question${res.generated === 1 ? '' : 's'} for ${profile.name}.`
-          : 'AI questions are switched off on this server.',
-      );
-      const fresh = await api.getProfile(profile.id);
-      setProfile(fresh);
+      setAiNote(res.enabled ? `Wrote ${res.generated} new question${res.generated === 1 ? '' : 's'} for ${name}.` : 'AI questions are switched off on this server.');
+      setProfile(await api.getProfile(profile.id));
     } catch (err) {
       setAiNote(describeError(err));
     } finally {
@@ -103,116 +137,104 @@ export default function ProfileScreen() {
     }
   };
 
-  const header = (
-    <View style={styles.header}>
-      <View style={styles.headerRow}>
-        <Button title="Back" variant="link" onPress={() => router.back()} />
-        <Button title="What they said" variant="link" onPress={() => router.push('/memories')} />
-      </View>
-      <View style={styles.themeBlock}>
-        <Text style={[styles.sectionLabel, { color: p.onGround }]}>Look</Text>
-        <ThemePicker />
-      </View>
+  const topLine = (
+    <View style={styles.topLine}>
+      <Word label="back" tone="grey" size={Type.small} onPress={() => router.back()} style={styles.topWord} />
+      <Word label="what they said" tone="grey" size={Type.small} onPress={() => router.push('/memories')} style={styles.topWord} />
     </View>
   );
 
-  if (error) {
-    return (
-      <Screen>
-        {header}
-        <Text style={[styles.error, { color: p.danger }]}>{error}</Text>
-      </Screen>
-    );
-  }
-
   if (!profile) {
     return (
-      <Screen>
-        {header}
-        <ActivityIndicator color={p.onGround} style={styles.spinner} />
-      </Screen>
+      <Page>
+        {topLine}
+        <View style={styles.middle}>{error ? <Typewriter text={error} size={Type.heading} /> : <Small> </Small>}</View>
+      </Page>
     );
   }
 
-  return (
-    <Screen>
-      <ProfileForm
-        mode="edit"
-        title="Your person."
-        initial={profile}
-        submitLabel="Save"
-        onSubmit={save}
-        header={header}
-        afterCard={
-          <>
-            <Text style={[styles.sectionLabel, { color: p.onGround }]}>Dates that matter</Text>
-            <Card contentStyle={styles.sectionCard}>
-              <DatesEditor dates={dates} onChange={setDates} />
-            </Card>
+  const chosen = options.filter((i) => interests.includes(i.id) && i.followUps.length > 0);
+  const hour = reminder.hour > 12 ? reminder.hour - 12 : reminder.hour;
 
-            <Text style={[styles.sectionLabel, { color: p.onGround }]}>Weekly nudge</Text>
-            <Card contentStyle={styles.sectionCard}>
-              <View style={styles.switchRow}>
-                <View style={styles.switchText}>
-                  <Text style={[styles.switchTitle, { color: p.ink }]}>Remind me once a week</Text>
-                  <Text style={[styles.switchHint, { color: p.muted }]}>
-                    {WEEKDAYS[reminder.weekday - 1]}s at {reminder.hour > 12 ? reminder.hour - 12 : reminder.hour}
-                    {reminder.hour >= 12 ? 'pm' : 'am'}. Off by default, on purpose.
-                  </Text>
+  return (
+    <Page>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {topLine}
+        <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <Line value={name} onChangeText={setName} placeholder="Sam" autoCapitalize="words" autoCorrect={false} maxLength={60} size={Type.heading} accessibilityLabel="Their name" />
+
+          <Small style={styles.label}>where they live</Small>
+          <Line value={location?.city ?? ''} onChangeText={(city) => setLocation(city ? { city } : null)} placeholder="Minneapolis" autoCapitalize="words" autoCorrect={false} maxLength={80} accessibilityLabel="Where they live" />
+          <Word label={locating ? 'finding you' : 'use my location'} tone="grey" size={Type.small} onPress={useMyLocation} disabled={locating} style={styles.inlineWord} />
+
+          <Small style={styles.label}>into</Small>
+          <Interests interests={options} selected={interests} onChange={setInterests} />
+
+          {chosen.map((interest) => (
+            <View key={interest.id}>
+              <Small style={styles.label}>{interest.label.toLowerCase()}</Small>
+              {interest.followUps.map((followUp) => (
+                <View key={followUp.id} style={styles.followUp}>
+                  <Small tone="muted">{followUp.prompt}</Small>
+                  <FollowUpAnswer
+                    followUp={followUp}
+                    value={details[interest.id]?.[followUp.id]}
+                    onChange={(v) => setDetails((d) => ({ ...d, [interest.id]: { ...d[interest.id], [followUp.id]: v } }))}
+                  />
                 </View>
-                <Switch
-                  value={reminder.enabled}
-                  onValueChange={toggleReminder}
-                  accessibilityLabel="Weekly reminder"
-                  trackColor={{ true: p.accent, false: p.muted }}
-                />
-              </View>
-              <Button title="Change the day" variant="link" tone="card" onPress={cycleWeekday} style={styles.inlineLink} />
-              {reminderNote && <Text style={[styles.note, { color: p.muted }]}>{reminderNote}</Text>}
-            </Card>
-          </>
-        }
-        footer={
-          <>
-            {profile.hiddenCount > 0 && (
-              <Text style={[styles.hint, { color: p.onGround }]}>
-                You&apos;ve hidden {profile.hiddenCount} question{profile.hiddenCount === 1 ? '' : 's'}.
-              </Text>
-            )}
-            {profile.aiQuestionCount > 0 && (
-              <Text style={[styles.hint, { color: p.onGround }]}>
-                {profile.aiQuestionCount} question{profile.aiQuestionCount === 1 ? '' : 's'} written just for {profile.name}.
-              </Text>
-            )}
-            <Button
-              title={generating ? 'Writing...' : 'Write new AI questions'}
-              variant="outline"
-              onPress={refreshAi}
-              disabled={generating}
+              ))}
+            </View>
+          ))}
+
+          <Small style={styles.label}>lately</Small>
+          <Line value={lately} onChangeText={setLately} placeholder="what's going on in their world" multiline maxLength={500} style={styles.multiline} accessibilityLabel="What is going on in their world lately" />
+
+          <Small style={styles.label}>dates that matter</Small>
+          <DatesEditor dates={dates} onChange={setDates} />
+
+          <Small style={styles.label}>weekly nudge</Small>
+          <View style={styles.row}>
+            <Word label="off" marked={!reminder.enabled} tone={reminder.enabled ? 'faint' : 'ink'} onPress={() => reminder.enabled && toggleReminder()} accessibilityLabel="Weekly reminder off" />
+            <Word label="on" marked={reminder.enabled} tone={reminder.enabled ? 'ink' : 'faint'} onPress={() => !reminder.enabled && toggleReminder()} accessibilityLabel="Weekly reminder on" />
+            <Word
+              label={`${WEEKDAYS[reminder.weekday - 1]}s at ${hour}${reminder.hour >= 12 ? 'pm' : 'am'}`}
+              tone="grey"
+              onPress={cycleWeekday}
+              accessibilityLabel="Change the day"
             />
-            {aiNote && <Text style={[styles.hint, { color: p.onGround }]}>{aiNote}</Text>}
-            <Button title="Start over with a new profile" variant="link" onPress={startOver} style={styles.centerLink} />
-          </>
-        }
-      />
-    </Screen>
+          </View>
+          {reminderNote && <Small>{reminderNote}</Small>}
+
+          <Small style={styles.label}>{`questions written for ${profile.name}`}</Small>
+          <Small tone="muted">
+            {profile.aiQuestionCount > 0 ? `${profile.aiQuestionCount} in the deck. ` : ''}
+            {profile.hiddenCount > 0 ? `${profile.hiddenCount} marked not for us.` : ''}
+          </Small>
+          <Word label={generating ? 'writing' : 'write new ones'} tone="grey" onPress={refreshAi} disabled={generating} accessibilityLabel="Write new AI questions" style={styles.inlineWord} />
+          {aiNote && <Small>{aiNote}</Small>}
+
+          {error && <Small style={styles.gap}>{error}</Small>}
+          <View style={styles.actions}>
+            <Word label={saving ? 'saving' : 'save'} size={Type.body} onPress={save} disabled={saving || !name.trim()} accessibilityLabel="Save" />
+            <Word label="start over" tone="grey" onPress={startOver} accessibilityLabel="Start over with a new profile" />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Page>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { gap: Spacing.sm },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  themeBlock: { gap: Spacing.sm, paddingVertical: Spacing.sm },
-  sectionLabel: { fontFamily: LegacyFonts.bold, fontSize: 15 },
-  sectionCard: { gap: Spacing.sm, padding: Spacing.md + 4 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  switchText: { flex: 1, gap: 2 },
-  switchTitle: { fontFamily: LegacyFonts.bold, fontSize: 16 },
-  switchHint: { fontFamily: LegacyFonts.medium, fontSize: 13, lineHeight: 18 },
-  inlineLink: { alignSelf: 'flex-start', minHeight: 36 },
-  note: { fontFamily: LegacyFonts.medium, fontSize: 13 },
-  hint: { fontFamily: LegacyFonts.medium, textAlign: 'center', fontSize: 14 },
-  centerLink: { alignSelf: 'center' },
-  error: { fontFamily: LegacyFonts.bold, fontSize: 16, marginTop: Spacing.md },
-  spinner: { marginTop: Spacing.xxl },
+  flex: { flex: 1 },
+  topLine: { flexDirection: 'row', justifyContent: 'space-between', minHeight: 24 },
+  topWord: { minHeight: 24 },
+  middle: { flex: 1, justifyContent: 'center' },
+  content: { paddingTop: Spacing.lg, paddingBottom: Margin.bottom, gap: Spacing.xs },
+  label: { marginTop: Spacing.xl },
+  inlineWord: { alignSelf: 'flex-start', minHeight: 36 },
+  followUp: { marginTop: Spacing.sm, gap: Spacing.xs },
+  multiline: { minHeight: 72, textAlignVertical: 'top' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg, flexWrap: 'wrap' },
+  gap: { marginTop: Spacing.md },
+  actions: { marginTop: Spacing.xl, gap: Spacing.sm },
 });

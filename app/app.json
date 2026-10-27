@@ -5,14 +5,14 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.juettner.yourperson"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#CFE3F7",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -31,12 +31,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#CFE3F7",
+          "backgroundColor": "#FFFFFF",
           "image": "./assets/splash-icon.png",
-          "imageWidth": 180,
-          "dark": {
-            "backgroundColor": "#1A1830"
-          }
+          "imageWidth": 180
         }
       ],
       [
@@ -48,7 +45,7 @@
       [
         "expo-notifications",
         {
-          "color": "#CFE3F7"
+          "color": "#1E1A17"
         }
       ]
     ],

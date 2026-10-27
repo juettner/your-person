@@ -35,7 +35,8 @@ Two deployable units, one repo. The app never talks to the database; it only tal
 
 - React is a component model. A component is a function that takes `props` (think constructor arguments) and returns UI. State lives in hooks (`useState`, `useEffect`). There are no classes to speak of anymore.
 - React Native renders real native widgets (`View` is a `UIView` on iOS, a `ViewGroup` on Android, a `div` on web). Styling uses a subset of CSS expressed as JavaScript objects.
-- Colors come from a palette object provided through React Context (`components/ThemeProvider.tsx`); components call `usePalette()` and never hard-code a hex. Five palettes live in `constants/theme.ts`, and the chosen one is remembered on the device. Spring analogy: a scoped bean that any component can have injected.
+- There is one look, so there is no theme machinery: `constants/theme.ts` holds the ink colors, the one font name, and the type sizes, and components import them directly. The journal pieces live in `components/`: `Page` (white paper, safe areas, the folded corner and the swipe), `Typewriter` (the typing line with its three cursor states), `Word` (a tappable word; the app has no buttons), `Circled` (a word with an ink circle drawn around it with `react-native-svg`), and `Line` (an input with only a rule underneath).
+- The typing and the circle are both plain timers and `Animated` values, no animation library. `Typewriter` keeps a character count in state and bumps it on an interval; `Circled` animates the SVG stroke's dash offset from the path's length down to zero, which reveals the stroke the way a pen draws it.
 - **Expo Router** is file-based navigation: every file under `src/app/` is a screen, and `_layout.tsx` files define the navigator around them. Think of it like Spring MVC mapping URLs to controllers by convention instead of annotations.
 - The app code is heavily commented. Start with `app/src/app/_layout.tsx` and follow the imports.
 
@@ -149,7 +150,7 @@ profile + brief + liked/hidden history  ──►  generate: Claude, structured 
 
 **Storage.** The deck lives on the profile document as `generated: { questions, generatedAt, basis }`. AI question ids start with `ai-` and sit in the same `feedback` list as curated ones.
 
-**What "deeper" looks like from here.** The engine already has every lever the roadmap needs: give the research step more to look up (a venue's calendar, the team's schedule), feed thumbs history back as examples, or let the model also propose new follow-up questions for the taxonomy. None of that changes the port.
+**What "deeper" looks like from here.** The engine already has every lever the roadmap needs: give the research step more to look up (a venue's calendar, the team's schedule), feed keep/not-for-us history back as examples, or let the model also propose new follow-up questions for the taxonomy. None of that changes the port.
 
 ## Card kinds and modes
 
@@ -159,7 +160,7 @@ Every bank entry has a `kind`: `question` (the default), `appreciation`, `bid`, 
 
 Lives in `api/src/questions/question-selector.service.ts`. Pure function of the profile, with an injectable random source so tests are deterministic.
 
-1. Drop any question the user hid (thumbs-down).
+1. Drop any question the user hid ("not for us").
 2. Candidates are questions tagged `general` plus questions matching any of the profile's interests, provided any `requires` are answered in the profile's details.
 3. Prefer questions not shown recently. If there are not enough fresh ones, top up with the ones shown longest ago.
 4. Weighted random pick: AI-written and detail-driven questions weigh 5, interest-matched 3, general 1, liked ones get +1.

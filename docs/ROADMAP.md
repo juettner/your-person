@@ -5,9 +5,9 @@ Phases, not dates. Each phase should be shippable on its own.
 ## Phase 0: walking skeleton (this commit)
 
 - [x] NestJS API: profiles, curated question bank, selection with hide/like, in-memory and MongoDB storage
-- [x] Expo app: onboarding questionnaire, full-screen question cards with thumbs up/down, profile edit
+- [x] Expo app: onboarding questionnaire, full-screen questions with keep / not for us, profile edit
 - [x] Runs on web with no infrastructure; iOS and Android via Expo Go
-- [x] Index Card look with five selectable palettes
+- [x] The Journal look: typewriter face, typed questions, words instead of buttons, ink circles, page turns (replaced the Index Card look and its palettes)
 - [x] Deep interests: per-interest follow-up cards in onboarding, answers feed templated questions
 - [x] Location as a place name, "Around town" interest, local follow-ups and city questions
 - [x] AI question engine: Claude writes a per-profile deck from the whole profile and feedback, optional web research, mixed into selection, rated like curated questions

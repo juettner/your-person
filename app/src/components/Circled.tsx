@@ -21,6 +21,8 @@ interface CircledProps {
   on: boolean;
   onPress: () => void;
   size?: number;
+  /** What it is to a screen reader: a checkbox in a pick-many list, a radio in a pick-one list. */
+  role?: 'checkbox' | 'radio';
 }
 
 /** One loop with a run-up and an overlap, in a 100 x 40 box. */
@@ -30,7 +32,7 @@ const LOOP_LENGTH = measure(LOOP);
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-export function Circled({ label, on, onPress, size = Type.body }: CircledProps) {
+export function Circled({ label, on, onPress, size = Type.body, role = 'checkbox' }: CircledProps) {
   const [box, setBox] = useState({ width: 0, height: 0 });
   // 0 = nothing drawn, 1 = the whole loop. An Animated.Value changes without re-rendering React.
   // Created once with useState's initializer; a word that starts picked (the profile page) shows its circle without redrawing it.
@@ -58,7 +60,7 @@ export function Circled({ label, on, onPress, size = Type.body }: CircledProps) 
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="checkbox"
+      accessibilityRole={role}
       accessibilityState={{ checked: on }}
       aria-checked={on}
       accessibilityLabel={label}
@@ -120,6 +122,9 @@ const styles = StyleSheet.create({
   wordBox: {
     alignSelf: 'flex-start',
     paddingVertical: 2,
+    // Side padding gives the loop room to start before the first letter; the negative margin keeps the text flush with the margin.
+    paddingHorizontal: 10,
+    marginHorizontal: -10,
   },
   word: {
     fontFamily: Fonts.type,
